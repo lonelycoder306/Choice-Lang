@@ -3,6 +3,12 @@
 #include <string_view>
 #include <vector>
 
+struct ClassState
+{
+    bool inClass;
+    uint8_t braceCount;
+};
+
 class Lexer
 {
     private:
@@ -12,7 +18,8 @@ class Lexer
         uint8_t column;
         uint32_t start;
         uint32_t current;
-        bool inGrouping;
+        ClassState state;
+        // bool inGrouping;
 
         // Utilities.
 
@@ -34,7 +41,6 @@ class Lexer
 
         // Token makers.
 
-        void eofToken();
         void makeToken(TokenType type);
         void charToken(TokenType type, int length = 1);
         void numToken();

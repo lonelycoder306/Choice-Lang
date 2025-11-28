@@ -23,12 +23,15 @@ static std::unordered_map<std::string_view, TokenType> keywords = {
 	{"null",    TOK_NULL},
 	{"and",     TOK_AND},
 	{"or",      TOK_OR},
-	{"new",		TOK_NEW}
+	{"new",		TOK_NEW},
+	{"def",		TOK_DEF},
+	{"fields",	TOK_FIELDS},
+	{"in",		TOK_IN}
 };
 
 Lexer::Lexer() :
 	line(1), column(1), start(0), current(0),
-	inGrouping(false) {}
+	state({false, 0})/*, inGrouping(false)*/ {}
 
 bool Lexer::hitEnd()
 {
@@ -90,12 +93,6 @@ void Lexer::updateColumn()
 	column += static_cast<uint8_t>(lastTokText.length());
 }
 
-void Lexer::eofToken()
-{
-	Token token(TOKEN_EOF, "", nullptr, 0, 0); // All sentinel values.
-	stream.push_back(token);
-}
-
 int Lexer::intValue(const std::string_view& text)
 {
 	return std::stoi(std::string(text));
@@ -126,9 +123,9 @@ void Lexer::makeToken(TokenType type)
 	{
 		switch (type)
 		{
-			case TOK_NUM_INT: value = intValue(text); break;
-			case TOK_NUM_DEC: value = decValue(text); break;
-			case TOK_STR_LIT: value = stringValue(text); break;
+			case TOK_NUM_INT: value = intValue(text);       break;
+			case TOK_NUM_DEC: value = decValue(text);       break;
+			case TOK_STR_LIT: value = stringValue(text);    break;
 			case TOK_TRUE:
 			case TOK_FALSE:
 				value = boolValue(type);
@@ -141,8 +138,7 @@ void Lexer::makeToken(TokenType type)
 		}
 	}
 	
-	Token token(type, text, value, line, column);
-	stream.push_back(token);
+	stream.emplace_back(type, text, value, line, column);
 }
 
 void Lexer::charToken(TokenType type, int length /* = 1*/)
@@ -171,11 +167,13 @@ void Lexer::stringToken()
 	while ((peekChar() != '"') && !hitEnd())
 	{
 		if (peekChar() == '\n')
-			throw LexError(); // Unsupported multi-line string.
+			// Column value here will not be accurate.
+			throw LexError(previousChar(), line, column + 1,
+				"Incorrect syntax for multi-line string.");
 		advance();
 	}
 	if (hitEnd())
-		throw LexError(); // Handle unterminated string.
+		throw LexError('\0', line, 0, "Unterminated string."); // Column is irrelevant.
 	advance(); // Consume final ".
 	makeToken(TOK_STR_LIT);
 	updateColumn();
@@ -202,7 +200,8 @@ void Lexer::multiStringToken()
 	}
 
 	if (hitEnd())
-		throw LexError(); // Handle unterminated string.
+		throw LexError('\0', line, 0, // Column is irrelevant.
+			"Unterminated multi-line string.");
 	advance(); // Consume final `.
 	column++; // To account for final `.
 	
@@ -232,7 +231,11 @@ TokenType Lexer::identifierType()
 	std::string_view text = code.substr(start, current - start);
 	auto it = keywords.find(text);
 	if (it != keywords.end())
+	{
+		if (it->second == TOK_CLASS)
+			state.inClass = true;
 		return it->second;
+	}
 	return TOK_IDENTIFIER;
 }
 
@@ -297,7 +300,8 @@ bool Lexer::checkHyperComment()
 			column += 3;
 		}
 		else
-			throw LexError(); // Handle unterminated hyper-comment.
+			throw LexError(peekChar(), line, column + 1,
+				"Unterminated nested comment.");
 		return true;
 	}
 	else
@@ -316,13 +320,36 @@ void Lexer::singleToken()
 		case ']': charToken(TOK_RIGHT_BRACKET); break;
 		case '(': charToken(TOK_LEFT_PAREN); break;
 		case ')': charToken(TOK_RIGHT_PAREN); break;
-		case '{': charToken(TOK_LEFT_BRACE); break;
-		case '}': charToken(TOK_RIGHT_BRACE); break;
+		case '{':
+		{
+			if (state.inClass)
+				state.braceCount++;
+			charToken(TOK_LEFT_BRACE);
+			break;
+		}
+		case '}':
+		{
+			if (state.inClass)
+			{
+				state.braceCount--;
+				if (state.braceCount == 0)
+					state.inClass = false;
+			}
+			charToken(TOK_RIGHT_BRACE);
+			break;
+		}
 		case ';': charToken(TOK_SEMICOLON); break;
 		case ',': charToken(TOK_COMMA); break;
 
 		case '+': charToken(TOK_PLUS); break;
-		case '-': charToken(TOK_MINUS); break;
+		case '-':
+		{
+			if (consumeChar('>'))
+				charToken(TOK_RARROW, 2);
+			else
+				charToken(TOK_MINUS);
+			break;
+		}
 		case '*': charToken(TOK_STAR); break;
 		case '/':
 		{
@@ -388,6 +415,7 @@ void Lexer::singleToken()
 				charToken(TOK_BAR_BAR, 2);
 			else
 				charToken(TOK_BAR);
+			break;
 		}
 		
 		// Strings.
@@ -439,10 +467,23 @@ void Lexer::singleToken()
 				}
 			}
 			if (hitEnd())
-				throw LexError(); // Handle unterminated comment.
+				throw LexError(peekChar(), line, column,
+					"Unterminated comment.");
 			advance();
 			column++;
 			break;
+		}
+
+		case '_':
+		{
+			if (state.inClass && consumeChar('_'))
+			{
+				charToken(TOK_UNDER_UNDER, 2);
+				break;
+			}
+			// No break since we interpret it
+			// as the first character in an
+			// identifier instead.
 		}
 
 		default:
@@ -452,28 +493,27 @@ void Lexer::singleToken()
 			else if (isalpha(c) || c == '_')
 				identifierToken();
 			else
-				throw LexError();
+				throw LexError(c, line, column, "Unrecognized token.");
 		}
 	}
 }
 
-#include <iostream> // FOR DEBUGGING. REMOVE.
 std::vector<Token>& Lexer::tokenize(std::string_view code)
 {
 	this->code = code;
 	column = 1;
-	while (!hitEnd())
+	try
 	{
-		start = current;
-		try
+		while (!hitEnd())
 		{
+			start = current;
 			singleToken();
 		}
-		catch (LexError& error)
-		{
-			std::cout << "HIT ERROR!\n";
-		}
 	}
-	eofToken();
+	catch (LexError& error)
+	{
+		error.report();
+	}
+	stream.emplace_back(); // Default is EOF token.
 	return stream;
 }
