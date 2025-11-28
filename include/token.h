@@ -10,7 +10,8 @@ using namespace Object;
 using Value = std::variant<long, double, bool, std::string_view, void *>;
 class Lexer;
 class TokenPrinter;
-class Compiler;
+class Compiler; class AltCompiler;
+class CompileError;
 
 enum TokenType : uint8_t
 {
@@ -50,6 +51,9 @@ enum TokenType : uint8_t
 	TOK_OR,				// or
 	TOK_RETURN,			// return
 	TOK_NEW,			// new
+	TOK_DEF,			// def
+	TOK_FIELDS,			// fields
+	TOK_IN,				// in
 
 	// Arithmetic operators.
 
@@ -89,6 +93,8 @@ enum TokenType : uint8_t
 	// Classes.
 
 	TOK_DOT,			// .
+	TOK_UNDER_UNDER,	// __
+	TOK_RARROW,			// ->
 
 	TOKEN_EOF
 };
@@ -103,16 +109,18 @@ class Token
 		uint8_t position; // The starting position of the token.
 	
 	public:
-		Token() = default;
+		Token();
 		Token(TokenType type, std::string_view text, Value content,
 				uint16_t line, uint8_t position);
 
 		friend class Lexer;
 		friend class TokenPrinter;
-		friend class Compiler;
+		friend class Compiler; friend class AltCompiler;
+		friend class CompileError;
 };
 
-#define IS_LITERAL(type) ((TOK_NUM_INT <= type) && (type <= TOK_NULL))
-#define IS_NUM(type) (type == TOK_NUM_INT)
-#define IS_DEC(type) (type == TOK_NUM_DEC)
-#define IS_STR(type) (type == TOK_STR_LIT)
+#define IS_LITERAL(type)	((TOK_NUM_INT <= type) && (type <= TOK_NULL))
+#define IS_TYPE(type)		((TOK_INT <= type) && (type <= TOK_ANY))
+#define IS_NUM(type)		(type == TOK_NUM_INT)
+#define IS_DEC(type)		(type == TOK_NUM_DEC)
+#define IS_STR(type)		(type == TOK_STR_LIT)

@@ -24,7 +24,8 @@ static const char* typeStrings[] = {
 
     "TOK_INT", "TOK_UINT", "TOK_DEC", "TOK_BOOL", "TOK_STRING",
     "TOK_FUNC", "TOK_ARRAY", "TOK_TABLE", "TOK_CLASS", "TOK_ANY",
-    "TOK_AND", "TOK_OR", "TOK_RETURN", "TOK_NEW",
+    "TOK_AND", "TOK_OR", "TOK_RETURN", "TOK_NEW", "TOK_DEF",
+    "TOK_FIELDS", "TOK_IN",
 
     "TOK_PLUS", "TOK_MINUS", "TOK_STAR", "TOK_SLASH", "TOK_PERCENT",
     "TOK_EQ_EQ", "TOK_GT", "TOK_GT_EQ", "TOK_LT", "TOK_LT_EQ",
@@ -35,7 +36,7 @@ static const char* typeStrings[] = {
 
     "TOK_IDENTIFIER", "TOK_MAKE", "TOK_FIX", "TOK_COLON", "TOK_EQUAL",
 
-    "TOK_DOT",
+    "TOK_DOT", "TOK_UNDER_UNDER", "TOK_RARROW",
 
     "TOKEN_EOF"
 };
