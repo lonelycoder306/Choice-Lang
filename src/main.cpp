@@ -1,102 +1,190 @@
+#include "../include/bytecode.h"
 #include "../include/common.h"
+#ifndef ALT // Testing.
+#include "../include/compiler.h"
+#include "../include/disasm.h"
+#endif
 #include "../include/lexer.h"
+#include "../include/main_utils.h"
 #include "../include/tokprinter.h"
+#include "../include/vm.h"
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <unordered_map>
+
+// Testing.
+#ifdef ALT
+#include "../include/altcompiler.h"
+#include "../include/altdisasm.h"
+#define Compiler AltCompiler
+#define Disassembler AltDisassembler
+#endif
+
+std::string file = "";
+bool external = false;
 
 enum ArgvOption
 {
-    EMIT_TOKENS,
-    EMIT_BYTECODE,
-    EXECUTE
+	// Show the tokens for the given 
+	// script or REPL input.
+	EMIT_TOKENS,
+
+	// Compile and show the bytecode for the
+	// given script or REPL input.
+	EMIT_BYTECODE,
+
+	// Compile and store the bytecode for the
+	// given script in a file.
+	CACHE_BYTECODE,
+
+	// Load a bytecode file/program and run it.
+	LOAD_PROGRAM,
+
+	// Load a bytecode file/program and display
+	// the bytecode held in it.
+	DIS_PROGRAM,
+
+	// Entire execution pipeline.
+	// Scan, compile, and execute given program
+	// or REPL input.
+	EXECUTE
 };
 
-static std::unordered_map<const char*, ArgvOption> options = {
-    {"-token", EMIT_TOKENS},
-    {"-bytecode", EMIT_BYTECODE}
+static std::unordered_map<std::string_view, ArgvOption> options = {
+	{"-token", EMIT_TOKENS},
+	{"-t", EMIT_TOKENS},
+
+	{"-bytecode", EMIT_BYTECODE},
+	{"-b", EMIT_BYTECODE},
+
+	{"-cache", CACHE_BYTECODE},
+	{"-c", CACHE_BYTECODE},
+
+	{"-load", LOAD_PROGRAM},
+	{"-l", LOAD_PROGRAM},
+
+	{"-dis", DIS_PROGRAM},
+	{"-d", DIS_PROGRAM}
 };
-
-static std::string readFile(std::ifstream& file)
-{
-    if (file.is_open())
-    {
-        std::stringstream buffer;
-        buffer << file.rdbuf();
-        std::string fileString = buffer.str();
-        file.close();
-        return fileString;
-    }
-
-    std::cerr << "File is closed.\n";
-    exit(66);
-}
 
 static void runFile(const char* fileName, ArgvOption option = EXECUTE)
-{   
-    std::ifstream file(fileName);
-    if (file.fail())
-    {
-        std::cerr << "Failed to open file.\n";
-        exit(66);
-    }
+{
+	if (!fileNameCheck(fileName))
+	{
+		std::cerr << "Invalid file name.\n";
+		exit(65);
+	}
+	
+	file = std::string(fileName);
+	if (option == LOAD_PROGRAM)
+	{
+		optionLoad(fileName);
+		return;
+	}
 
-    std::string code = readFile(file);
+	if (option == DIS_PROGRAM)
+	{
+		optionDis(fileName);
+		return;
+	}
 
-    // Performing tokenization outside.
-    Lexer lexer;
-    vT tokens = lexer.tokenize(code);
-    if (option == EMIT_TOKENS)
-    {
-        TokenPrinter printer(tokens);
-        printer.printTokens();
-        return;
-    }
+	std::string code = readFile(fileName);
 
-    // Perform compilation outside.
-    // ...
-    else if (option == EMIT_BYTECODE)
-    {
-        // ...
-    }
+	// Performing tokenization outside.
+	Lexer lexer;
+	vT& tokens = lexer.tokenize(code);
+	if (option == EMIT_TOKENS)
+	{
+		TokenPrinter printer(tokens);
+		printer.printTokens();
+		return;
+	}
 
-    // Execution logic.
+	// Perform compilation outside.
+	Compiler compiler(tokens);
+	ByteCode& chunk = compiler.compile();
+	if (option == EMIT_BYTECODE)
+	{
+		Disassembler dis(chunk);
+		dis.disassembleCode();
+		return;
+	}
+
+	if (option == CACHE_BYTECODE)
+	{
+		optionCacheBytes(chunk, fileName);
+		return;
+	}
+
+	// Execution logic.
+	VM vm;
+	vm.executeCode(chunk);
 }
 
-static void repl()
+static void repl(ArgvOption option = EXECUTE)
 {
-    std::string line;
-    while (true)
-    {
-        std::cout << ">>> ";
-        std::getline(std::cin, line);
+	// All invalid options for REPL mode.
+	if (option == CACHE_BYTECODE || option == LOAD_PROGRAM ||
+		option == DIS_PROGRAM)
+	{
+		std::cerr << "Invalid command-line option for REPL mode.\n";
+		exit(64);
+	}
+	
+	file = "";
 
-        if (!line.empty())
-        {
-            if (dumpTokens)
-            {
-                Lexer lexer;
-                vT tokens = lexer.tokenize(line);
+	std::string line;
+	while (true)
+	{
+		std::cout << ">>> ";
+		std::getline(std::cin, line);
 
-                TokenPrinter printer(tokens);
-                printer.printTokens();
-            }
-        }
-        else
-            break;
-    }
+		if (!line.empty())
+		{
+			Lexer lexer;
+			vT& tokens = lexer.tokenize(line);
+			if (option == EMIT_TOKENS)
+			{
+				TokenPrinter printer(tokens);
+				printer.printTokens();
+				continue;
+			}
+
+			Compiler compiler(tokens);
+			ByteCode& chunk = compiler.compile();
+			if (option == EMIT_BYTECODE)
+			{
+				Disassembler dis(chunk);
+				dis.disassembleCode();
+				continue;
+			}
+
+			VM vm;
+			vm.executeCode(chunk);
+		}
+		else
+			break;
+	}
 }
 
 int main(int argc, const char* argv[])
-{
-    if (argc == 3)
-        runFile(argv[2], options[argv[1]]);
-    else if (argc == 2)
-        runFile(argv[1]);
-    else
-        repl();
-    
-    return 0;
+{   
+	if (argc == 3)
+		runFile(argv[2], options[argv[1]]);
+	else if (argc == 2)
+	{
+		auto it = options.find(argv[1]);
+		if (it != options.end())
+			repl(it->second);
+		else
+			runFile(argv[1]);
+	}
+	else
+		repl();
+	
+	return 0;
 }

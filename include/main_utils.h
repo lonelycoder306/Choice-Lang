@@ -1,0 +1,20 @@
+#pragma once
+#include "bytecode.h"
+#include "common.h"
+#include "object.h"
+#include <string>
+#include <string_view>
+#include <vector>
+#include <memory>
+
+using BaseUP = std::unique_ptr<Object::Base>;
+
+std::string readFile(const char* fileName);
+vObj reconstructPool(const vByte& poolBytes);
+ByteCode readCache(std::ifstream& fileIn);
+void optionLoad(const char* fileName);
+void optionDis(const char* fileName);
+void optionCacheBytes(const ByteCode& chunk, const char* fileName);
+bool fileNameCheck(std::string_view fileName);
+// void optionTokenize();
+// void optionEmitBytes();
