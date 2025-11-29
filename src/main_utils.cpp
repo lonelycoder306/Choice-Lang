@@ -8,6 +8,7 @@
 #define Disassembler AltDisassembler
 #endif
 #include "../include/object.h"
+#include "../include/utils.h"
 #include "../include/vm.h"
 #include <functional>
 #include <iostream>
@@ -301,22 +302,6 @@ void optionCacheBytes(const ByteCode& chunk, const char* fileName)
 	std::ofstream cacheFile(outFile, std::ios::binary);
 	chunk.cacheStream(cacheFile);
 }
-
-// Credit for ends_with and starts_with: Pavel P.
-// Source: https://stackoverflow.com/questions/874134/.
-
-static bool ends_with(std::string_view str, std::string_view suffix)
-{
-    return (str.size() >= suffix.size()
-			&& (str.compare(str.size()-suffix.size(), 
-			suffix.size(), suffix) == 0));
-}
-
-// static bool starts_with(std::string_view str, std::string_view prefix)
-// {
-//     return (str.size() >= prefix.size()
-// 			&& (str.compare(0, prefix.size(), prefix) == 0));
-// }
 
 bool fileNameCheck(std::string_view fileName)
 {
