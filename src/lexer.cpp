@@ -1,11 +1,13 @@
 #include "../include/lexer.h"
 #include "../include/error.h"
+#include "../include/object.h"
 #include "../include/token.h"
 #include "../include/utils.h"
 #include <cctype>
 #include <cstring>
 #include <string>
 #include <unordered_map>
+using namespace Object;
 
 static std::unordered_map<std::string_view, TokenType> keywords = {
 	{"int",     TOK_INT},
@@ -100,7 +102,7 @@ Value Lexer::intSizedValue(std::string_view text)
 	if (ends_with(text, "8"))
 	{
 		text = text.substr(0, text.size() - 3);
-		return NumLiteral(OBJ_INT, 8, static_cast<int8_t>(
+		return NumLiteral(8, static_cast<int8_t>(
 				std::stoi(std::string(text)))
 			);
 	}
@@ -108,7 +110,7 @@ Value Lexer::intSizedValue(std::string_view text)
 	else if (ends_with(text, "16"))
 	{
 		text = text.substr(0, text.size() - 4);
-		return NumLiteral(OBJ_INT, 16, static_cast<int16_t>(
+		return NumLiteral(16, static_cast<int16_t>(
 				std::stoi(std::string(text)))
 			);
 	}
@@ -116,7 +118,7 @@ Value Lexer::intSizedValue(std::string_view text)
 	else if (ends_with(text, "32"))
 	{
 		text = text.substr(0, text.size() - 4);
-		return NumLiteral(OBJ_INT, 32, static_cast<int32_t>(
+		return NumLiteral(32, static_cast<int32_t>(
 				std::stol(std::string(text)))
 			);
 	}
@@ -124,10 +126,12 @@ Value Lexer::intSizedValue(std::string_view text)
 	else if (ends_with(text, "64"))
 	{
 		text = text.substr(0, text.size() - 4);
-		return NumLiteral(OBJ_INT, 64, static_cast<int64_t>(
+		return NumLiteral(64, static_cast<int64_t>(
 				std::stoll(std::string(text)))
 			);
 	}
+
+	return nullptr; // Unreachable.
 }
 
 Value Lexer::uIntSizedValue(std::string_view text)
@@ -135,7 +139,7 @@ Value Lexer::uIntSizedValue(std::string_view text)
 	if (ends_with(text, "_u"))
 	{
 		text = text.substr(0, text.size() - 2);
-		return NumLiteral(OBJ_UINT, 0, static_cast<uint64_t>(
+		return NumLiteral(0, static_cast<uint_type>(
 				std::stoull(std::string(text))
 			));
 	}
@@ -143,7 +147,7 @@ Value Lexer::uIntSizedValue(std::string_view text)
 	else if (ends_with(text, "8"))
 	{
 		text = text.substr(0, text.size() - 3);
-		return NumLiteral(OBJ_UINT, 8, static_cast<uint8_t>(
+		return NumLiteral(8, static_cast<uint8_t>(
 				std::stoi(std::string(text))
 			));
 	}
@@ -151,7 +155,7 @@ Value Lexer::uIntSizedValue(std::string_view text)
 	else if (ends_with(text, "16"))
 	{
 		text = text.substr(0, text.size() - 4);
-		return NumLiteral(OBJ_UINT, 16, static_cast<uint16_t>(
+		return NumLiteral(16, static_cast<uint16_t>(
 				std::stoi(std::string(text))
 			));
 	}
@@ -159,7 +163,7 @@ Value Lexer::uIntSizedValue(std::string_view text)
 	else if (ends_with(text, "32"))
 	{
 		text = text.substr(0, text.size() - 4);
-		return NumLiteral(OBJ_UINT, 32, static_cast<uint32_t>(
+		return NumLiteral(32, static_cast<uint32_t>(
 				std::stoul(std::string(text))
 			));
 	}
@@ -167,15 +171,17 @@ Value Lexer::uIntSizedValue(std::string_view text)
 	else if (ends_with(text, "64"))
 	{
 		text = text.substr(0, text.size() - 4);
-		return NumLiteral(OBJ_UINT, 64, static_cast<uint64_t>(
+		return NumLiteral(64, static_cast<uint64_t>(
 				std::stoull(std::string(text))
 			));
 	}
+
+	return nullptr; // Unreachable.
 }
 
 Value Lexer::intValue(const std::string_view& text)
 {	
-	return NumLiteral(OBJ_INT, 0, static_cast<int64_t>(
+	return NumLiteral(0, static_cast<int_type>(
 			std::stoll(std::string(text))
 		));
 }
@@ -185,16 +191,18 @@ Value Lexer::decValue(std::string_view text)
 	if (ends_with(text, "32"))
 	{
 		text = text.substr(0, text.size() - 4);
-		return NumLiteral(OBJ_DEC, 32, std::stof(std::string(text)));
+		return NumLiteral(32, std::stof(std::string(text)));
 	}
 
 	else if (ends_with(text, "64"))
 	{
 		text = text.substr(0, text.size() - 4);
-		return NumLiteral(OBJ_DEC, 64, std::stod(std::string(text)));
+		return NumLiteral(64, std::stod(std::string(text)));
 	}
 	
-	return NumLiteral(OBJ_DEC, 0, std::stod(std::string(text)));
+	return NumLiteral(0, static_cast<dec_type>(
+			std::stod(std::string(text))
+		));
 }
 
 Value Lexer::stringValue(const std::string_view& text)
@@ -218,13 +226,15 @@ void Lexer::makeToken(TokenType type)
 		switch (type)
 		{
 			case TOK_NUM:		value = intValue(text);       	break;
-			case TOK_NUM_DEC:	value = decValue(text);       	break;
 			case TOK_NUM_S:		value = intSizedValue(text);	break;
 			case TOK_NUM_U:
 			case TOK_NUM_US:
 				value = uIntSizedValue(text);
 				break;
-			case TOK_NUM_DEC_S:	value = decValue(text);			break;
+			case TOK_NUM_DEC:
+			case TOK_NUM_DEC_S:
+				value = decValue(text);
+				break;
 			case TOK_STR_LIT:	value = stringValue(text);		break;
 			case TOK_TRUE:
 			case TOK_FALSE:
@@ -259,7 +269,7 @@ bool Lexer::matchString(std::string_view str, bool consume /* = false */)
 
 	if (consume)
 	{
-		for (char c : str)
+		for (size_t i = 0; i < str.size(); i++)
 			advance();
 	}
 
@@ -331,7 +341,7 @@ void Lexer::numLiteral(TokenType type)
 		}
 		else
 			throw LexError(peekChar(), line, column,
-				"Must specify floating-point size using _d modifier.");
+				"Must specify floating-point size using '_d' modifier.");
 	}
 }
 
