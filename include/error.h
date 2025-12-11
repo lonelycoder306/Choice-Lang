@@ -16,12 +16,12 @@ class LexError : public Error
 {
 	private:
 		char errorChar;
-		uint16_t line;
-		uint8_t position;
+		ui16 line;
+		ui8 position;
 
 	public:
 		LexError() = default;
-		LexError(char c, uint16_t line, uint8_t position, std::string_view message);
+		LexError(char c, ui16 line, ui8 position, std::string_view message);
 
 		void report();
 };

@@ -8,7 +8,7 @@ Error::Error(std::string_view message) :
 
 // LexError.
 
-LexError::LexError(char c, uint16_t line, uint8_t position, std::string_view message) :
+LexError::LexError(char c, ui16 line, ui8 position, std::string_view message) :
 	Error(message), errorChar(c), line(line), position(position) {}
 
 void LexError::report()
