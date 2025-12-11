@@ -3,19 +3,19 @@
 #include <string_view>
 #include <unordered_map>
 
-enum Opcode : uint8_t // Each opcode is a single byte.
+enum Opcode : ui8 // Each opcode is a single byte.
 {
 	// Basic values.
 
+	OP_NEG_TWO,		// -2
+	OP_NEG_ONE,		// -1
 	OP_ZERO,		// 0
 	OP_ONE,			// 1
 	OP_TWO,			// 2
-	OP_NEG_ONE,		// -1
-	OP_NEG_TWO,		// -2
 	OP_TRUE,		// true
 	OP_FALSE,		// false
 	OP_NULL,		// null
-    OP_CONST,       // Load constant.
+    OP_CONST,       // Load a constant.
 	
 	// Arithmetic.
 
@@ -23,13 +23,13 @@ enum Opcode : uint8_t // Each opcode is a single byte.
 	OP_SUB,			// Subtract two values.
 	OP_MULT,		// Multiply two values.
 	OP_DIV,			// Divide two values.
-	OP_NEGATE,		// Invert a value's sign.
 	OP_POWER,		// Raise a value to a power.
 	OP_MOD,			// Take the modulus between two values.
+	OP_NEGATE,		// Invert a value's sign.
 
 	// Variables.
 
-	OP_DEF_VAR,		// Define a variable.
+	// OP_DEF_VAR,		// Define a variable.
 	OP_GET_VAR,		// Retrieve/load a variable.
 	OP_SET_VAR,		// Assign to a variable.
 
@@ -75,19 +75,19 @@ enum Opcode : uint8_t // Each opcode is a single byte.
 
 	// For testing.
 	OP_LOAD_R,		// Load a constant pointer into a register.
-	OP_STORE_R,		// Store a register's value in another register.
+	OP_MOVE_R,		// Store a register's value in another register.
 	// OP_FREE_R		// Free a particular register.
 };
 
 static std::string_view opNames[] = {
-	"OP_ZERO", "OP_ONE", "OP_TWO", "OP_NEG_ONE",
-	"OP_NEG_TWO", "OP_TRUE", "OP_FALSE", "OP_NULL",
+	"OP_NEG_TWO", "OP_NEG_ONE", "OP_ZERO", "OP_ONE",
+	"OP_TWO", "OP_TRUE", "OP_FALSE", "OP_NULL",
     "OP_CONST",
 
-	"OP_ADD", "OP_SUB", "OP_MULT", "OP_DIV", "OP_NEGATE",
-	"OP_POWER", "OP_MOD",
+	"OP_ADD", "OP_SUB", "OP_MULT", "OP_DIV", "OP_POWER", 
+	"OP_MOD", "OP_NEGATE",
 
-	"OP_DEF_VAR", "OP_GET_VAR", "OP_SET_VAR",
+	/*"OP_DEF_VAR",*/ "OP_GET_VAR", "OP_SET_VAR",
 
 	"OP_LIST", "OP_TABLE",
 
@@ -101,8 +101,6 @@ static std::string_view opNames[] = {
 
 	"OP_JUMP", "OP_JUMP_TRUE", "OP_JUMP_FALSE", "OP_LOOP",
 	"OP_BYTE_OPER", "OP_SHORT_OPER", "OP_LONG_OPER",
-
-	// For testing.
 	
-	"OP_LOAD_R", // "OP_FREE_R"
+	"OP_LOAD_R", "OP_MOVE_R" // "OP_FREE_R"
 };
