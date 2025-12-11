@@ -6,7 +6,7 @@
 struct ClassState
 {
     bool inClass;
-    uint8_t braceCount;
+    ui8 braceCount;
 };
 
 class Lexer
@@ -14,10 +14,10 @@ class Lexer
     private:
         std::string_view code;
         std::vector<Token> stream;
-        uint16_t line;
-        uint8_t column;
-        uint32_t start;
-        uint32_t current;
+        ui16 line;
+        ui8 column;
+        ui32 start;
+        ui32 current;
         ClassState state;
         // bool inGrouping;
 
@@ -31,9 +31,9 @@ class Lexer
         char peekChar(int distance = 0);
         char previousChar(int distance = 0);
         TokenType identifierType();
-        bool matchString(std::string_view str, bool consume = false);
-        bool matchSequence(char c, int length, bool forward = true);
-        void updateColumn();
+        bool matchString(const std::string_view& str);
+        bool matchStrings(const std::vector<std::string_view>& strs);
+        bool matchSequence(char c, int length);
 
         // Value conversion methods.
 
@@ -47,7 +47,6 @@ class Lexer
         // Token makers.
 
         void makeToken(TokenType type);
-        void charToken(TokenType type, int length = 1);
         void numLiteral(TokenType type); // For more complex numeric literals.
         void numToken();
         void stringToken();
