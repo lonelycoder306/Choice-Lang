@@ -4,8 +4,25 @@
 #include "token.h"
 #include <string_view>
 
-class AltCompiler
+class Compiler
 {
+    #define GET_TOK_V(token, type) GETV(token.content, type)
+    #define VAL_PTR(val, type) std::make_unique<type>(val)
+    #define TOK_VAL_PTR(token, origType, newType) \
+		VAL_PTR(GET_TOK_V(token, origType), newType)
+
+    #define GET_NUM(token)  GET_TOK_V(token, NumLiteral)
+    #define GET_SIZE(token) GET_NUM(token).size
+    #define GET_VAL(token, type) GETV(GET_NUM(token).value, type)
+
+    #define INT_TYPE(size)  Int<i##size>
+    #define UINT_TYPE(size) UInt<ui##size>
+	
+	// For checking previous Boolean values we've evaluated.
+	// Will be useful when executing conditional jump instructions.
+	//#define EVAL_TRUE()	(registers[regSize - 1] == 1)
+	//#define EVAL_FALSE()	(registers[regSize - 1] == 0)
+    
     private:
         ByteCode code;
         // const vT& tokens;
@@ -13,9 +30,9 @@ class AltCompiler
         Token currentTok;
         vT::const_iterator it;
         static constexpr int regSize = 256;
-        uint8_t registers[regSize];
-        uint8_t previousReg;
-        uint8_t currentReg;
+        // ui8 registers[regSize];
+        ui8 previousReg;
+        ui8 currentReg;
 
         // For registers.
         void freeReg();
@@ -51,6 +68,6 @@ class AltCompiler
         void primary();
     
     public:
-        AltCompiler(const vT& tokens);
-        ByteCode& compile();
+        Compiler();
+        ByteCode& compile(const vT& tokens);
 };
