@@ -3,12 +3,12 @@
 
 // Error.
 
-Error::Error(std::string_view message) :
+Error::Error(std::string message) :
 	message(message) {}
 
 // LexError.
 
-LexError::LexError(char c, ui16 line, ui8 position, std::string_view message) :
+LexError::LexError(char c, ui16 line, ui8 position, std::string message) :
 	Error(message), errorChar(c), line(line), position(position) {}
 
 void LexError::report()
@@ -23,7 +23,7 @@ void LexError::report()
 
 // CompileError.
 
-CompileError::CompileError(const Token& token, std::string_view message) :
+CompileError::CompileError(const Token& token, std::string message) :
 	Error(message), token(token) {}
 
 void CompileError::report()

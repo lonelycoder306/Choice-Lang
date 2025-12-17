@@ -5,11 +5,11 @@
 class Error
 {
 	protected:
-		std::string_view message;
+		std::string message;
 
 	public:
 		Error() = default;
-		Error(std::string_view message);
+		Error(std::string message);
 };
 
 class LexError : public Error
@@ -21,7 +21,7 @@ class LexError : public Error
 
 	public:
 		LexError() = default;
-		LexError(char c, ui16 line, ui8 position, std::string_view message);
+		LexError(char c, ui16 line, ui8 position, std::string message);
 
 		void report();
 };
@@ -29,10 +29,10 @@ class LexError : public Error
 class CompileError : public Error
 {
 	private:
-		const Token& token;
+		Token token;
 
 	public:
-		CompileError(const Token& token, std::string_view message);
+		CompileError(const Token& token, std::string message);
 
 		void report();
 };
