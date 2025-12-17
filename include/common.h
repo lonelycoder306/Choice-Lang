@@ -4,20 +4,10 @@
 #include <memory>
 #include <string>
 #include <vector>
-// #define ALT
 
-class Token;
-using vT    	= std::vector<Token>;
-using vByte 	= std::vector<uint8_t>;
-using vObj  	= std::vector<Object::BaseUP>;
+#define COMP_AST
 
-using Byte  	= int8_t;
-using Short 	= int16_t;
-using Long  	= int32_t;
-
-using UByte     = uint8_t;
-using UShort    = uint16_t;
-using ULong     = uint32_t;
+#define GETV(variant, type) std::get<type>(variant)
 
 using i8        = int8_t;
 using i16       = int16_t;
@@ -28,6 +18,13 @@ using ui8       = uint8_t;
 using ui16      = uint16_t;
 using ui32      = uint32_t;
 using ui64      = uint64_t;
+
+using Hash      = uint32_t;
+
+class Token;
+using vT    	= std::vector<Token>;
+using vByte 	= std::vector<ui8>;
+using vObj  	= std::vector<Object::BaseUP>;
 
 constexpr int TAB_SIZE = 4;
 // Whether we're running an externally loaded
