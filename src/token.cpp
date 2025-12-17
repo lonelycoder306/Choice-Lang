@@ -5,6 +5,14 @@ Token::Token() :
     line(0), position(0) {}
 
 Token::Token(TokenType type, std::string_view text, Value content,
-                uint16_t line, uint8_t position) :
+                ui16 line, ui8 position) :
     type(type), text(text), content(content), 
     line(line), position(position) {}
+
+// NumLiteral.
+
+NumLiteral::NumLiteral(size_t size, literalVar value)
+{
+	this->size = size;
+	this->value = value;
+}

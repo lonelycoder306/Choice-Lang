@@ -8,14 +8,15 @@ using namespace Object;
 
 struct NumLiteral
 {
-	ObjType	type; // int, uint, dec
-	size_t	size; // 0 (= default), 8, 16, 32, 64
-
-	using literalVar = std::variant<int8_t, int16_t, int32_t, int64_t,
-									uint8_t, uint16_t, uint32_t, uint64_t,
+	using literalVar = std::variant<i8, i16, i32, i64,
+									ui8, ui16, ui32, ui64,
 									float, double>;
 	
-	literalVar value;
+	size_t		size; // 0 (= default), 8, 16, 32, 64
+	literalVar	value;
+
+	NumLiteral() = default;
+	NumLiteral(size_t size, literalVar value);
 };
 
 // Can hold a literal of any needed size.
@@ -24,8 +25,9 @@ class Lexer;
 class TokenPrinter;
 class Compiler; class AltCompiler;
 class CompileError;
+class VM;
 
-enum TokenType : uint8_t
+enum TokenType : ui8
 {
 	// Characters.
 	TOK_LEFT_BRACKET,	// [
@@ -61,8 +63,8 @@ enum TokenType : uint8_t
 	TOK_FUNC,			// func
 	TOK_ARRAY,			// array
 	TOK_TABLE,			// table
-	TOK_CLASS,			// class
 	TOK_ANY,			// any
+	TOK_CLASS,			// class
 	TOK_AND,			// and
 	TOK_OR,				// or
 	TOK_RETURN,			// return
@@ -78,10 +80,12 @@ enum TokenType : uint8_t
 	TOK_STAR,			// *
 	TOK_SLASH,			// /
 	TOK_PERCENT,		// %
+	TOK_STAR_STAR,		// **
 
 	// Boolean/comparison operators.
 
 	TOK_EQ_EQ,			// ==
+	TOK_BANG_EQ,		// !=
 	TOK_GT,				// >
 	TOK_GT_EQ,			// >=
 	TOK_LT,				// <
@@ -121,18 +125,21 @@ class Token
 		TokenType type;
 		std::string_view text; // The actual text of the token.
 		Value content; // The literal's actual value.
-		uint16_t line; // The line holding the token.
-		uint8_t position; // The starting position of the token.
+		ui16 line; // The line holding the token.
+		ui8 position; // The starting position of the token.
 	
 	public:
 		Token();
 		Token(TokenType type, std::string_view text, Value content,
-				uint16_t line, uint8_t position);
+				ui16 line, ui8 position);
 
 		friend class Lexer;
 		friend class TokenPrinter;
-		friend class Compiler; friend class AltCompiler;
+		friend class Parser;
+		friend class Compiler;
+		friend class ASTCompiler;
 		friend class CompileError;
+		friend class VM;
 };
 
 #define IS_LITERAL(type)	((TOK_NUM <= type) && (type <= TOK_NULL))
