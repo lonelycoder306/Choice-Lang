@@ -7,12 +7,34 @@ using namespace Object;
 
 class VM;
 class Disassembler;
-// For testing.
-class AltDisassembler;
-class AltVM;
 
-struct ByteCode
+class ByteCode
 {
+    #define INT_SIZE(size) i##size
+    #define UINT_SIZE(size) ui##size
+    #define GET_CONST_T(constant, type) \
+        type* temp = dynamic_cast<type*>(constant.get())
+    #define CHECK_VAL_T(constant, type) \
+        GET_CONST_T(constant, type); temp != nullptr
+    #define ADD_IF_SMALL(value) \
+        do { \
+            if ((-3 < static_cast<i64>(value)) && (value < 3)) \
+            { \
+                addByte(static_cast<ui8>(value + 2)); \
+                return; \
+            } \
+        } while (false)
+    #define ADD_SMALL_INT(constant, size) \
+        do { \
+            GET_CONST_T(constant, Int<INT_SIZE(size)>); \
+            ADD_IF_SMALL(temp->value); \
+        } while (false)
+    #define ADD_SMALL_UINT(constant, size) \
+        do { \
+            GET_CONST_T(constant, UInt<UINT_SIZE(size)>); \
+            ADD_IF_SMALL(temp->value); \
+        } while (false)
+
     private:
         vByte block;
         vObj pool;
@@ -22,33 +44,31 @@ struct ByteCode
         ByteCode(const vByte& block);
         ByteCode(const vByte& block, vObj pool);
 
-        void addByte(uint8_t byte);
+        void addByte(ui8 byte);
         template<typename... Bytes>
         void addBytes(Bytes... bytes);
         // Using big endian.
-        void addShort(uint16_t bytes);
-        void addLong(uint32_t bytes);
-        void addConst(BaseUP constant);
+        void addShort(ui16 bytes);
+        void addLong(ui32 bytes);
 
-        void cacheStream(std::ofstream& os) const;
-
-        // For testing.
-        void loadReg(uint8_t reg, uint8_t op);
-        void loadRegConst(BaseUP constant, uint8_t reg);
+        void loadReg(ui8 reg, ui8 op);
+        void loadRegConst(BaseUP constant, ui8 reg);
         template<typename Op, typename... Bytes>
         void addOp(Op op, Bytes... opers);
 
+        void cacheStream(std::ofstream& os) const;
+        void clearCode();
+        void clearPool();
+        void clear();
+
         friend class VM;
         friend class Disassembler;
-        // For testing.
-        friend class AltDisassembler;
-        friend class AltVM;
 };
 
 template<typename... Bytes>
 void ByteCode::addBytes(Bytes... bytes)
 {
-    for (uint8_t byte : {bytes...})
+    for (ui8 byte : {bytes...})
         addByte(byte);
 }
 
@@ -57,7 +77,7 @@ void ByteCode::addBytes(Bytes... bytes)
 template<typename Op, typename... Bytes>
 void ByteCode::addOp(Op op, Bytes... opers)
 {
-    addByte(static_cast<uint8_t>(op));
-    for (uint8_t operand : {opers...})
+    addByte(static_cast<ui8>(op));
+    for (ui8 operand : {opers...})
         addByte(operand);
 }
