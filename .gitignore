@@ -9,3 +9,4 @@ extras/
 build/
 sources/
 VS Solution/
+.env
