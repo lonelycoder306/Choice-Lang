@@ -1,29 +1,36 @@
 #pragma once
+#include "astnodes.h"
 #include "bytecode.h"
 #include "common.h"
 #include "object.h"
+#include "opcodes.h"
+#include "vartable.h"
 #include <variant>
 #include <vector>
-
+using AST::Expression::VarExpr;
 using RegVar = std::variant<BaseUP, int, bool, Null>;
+class ASTCompiler;
 
-class AltVM
+class VM
 {
     private:
         vByte::const_iterator ip;
         static constexpr int regSize = 256;
-        RegVar registers[regSize];
-        uint8_t regSlot;
+        std::vector<RegVar> registers;
+        ui8 regSlot;
 
         // Utilities.
 
-        bool checkNumOper(uint8_t slot);
-        bool checkNumOpers(uint8_t slot1, uint8_t slot2);
+        bool checkNumOper(ui8 slot);
+        bool checkNumOpers(ui8 slot1, ui8 slot2);
         void arithOper(Opcode oper);
 
-        void executeOp(uint8_t op);
+        // Variables.
+
+        void executeOp(Opcode op);
     
     public:
-        AltVM();
+        VM();
         void executeCode(const ByteCode& code);
+        friend class ASTCompiler;
 };

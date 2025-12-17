@@ -1,11 +1,13 @@
-#include "../include/altvm.h"
+#include "../include/vm.h"
 #include "../include/opcodes.h"
 #include <cstring>
+using namespace AST::Statement;
+using namespace AST::Expression;
 
-AltVM::AltVM() :
-    regSlot(0) {}
+VM::VM() :
+    registers(regSize), regSlot(0) {}
 
-bool AltVM::checkNumOper(uint8_t slot)
+bool VM::checkNumOper(ui8 slot)
 {
     if (registers[slot].index() == 0) // BaseUP.
     {
@@ -19,16 +21,20 @@ bool AltVM::checkNumOper(uint8_t slot)
     return false;
 }
 
-bool AltVM::checkNumOpers(uint8_t slot1, uint8_t slot2)
+bool VM::checkNumOpers(ui8 slot1, ui8 slot2)
 {
     return (checkNumOper(slot1) && checkNumOper(slot2));
 }
 
-void AltVM::arithOper(Opcode oper)
+void VM::arithOper(Opcode oper)
 {
-    uint8_t dest = *(++ip);
-    uint8_t oper1 = *(++ip);
-    uint8_t oper2 = *(++ip);
+    ui8 dest = *(++ip);
+    ui8 oper1 = *(++ip);
+    ui8 oper2 = *(++ip);
+
+    // Temporary.
+    (void) dest;
+    (void) oper;
 
     if (checkNumOpers(oper1, oper2))
     {
@@ -36,7 +42,7 @@ void AltVM::arithOper(Opcode oper)
     }
 }
 
-void AltVM::executeOp(uint8_t op)
+void VM::executeOp(Opcode op)
 {
     switch (op)
     {
@@ -64,17 +70,19 @@ void AltVM::executeOp(uint8_t op)
         case OP_NEGATE: ip++;   break;
         case OP_POWER:  ip++;   break;
         case OP_MOD:    arithOper(OP_MOD);  break;
+
+        default: break;
     }
 }
 
-void AltVM::executeCode(const ByteCode& code)
+void VM::executeCode(const ByteCode& code)
 {
     ip = code.block.begin();
     auto end = code.block.end();
     
     while (ip < end)
     {
-        uint8_t op = *ip;
-        executeOp(op);
+        ui8 op = *ip;
+        executeOp(static_cast<Opcode>(op));
     }
 }
