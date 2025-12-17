@@ -1,12 +1,7 @@
 #include "../include/main_utils.h"
 #include "../include/bytecode.h"
 #include "../include/common.h"
-#ifndef ALT
 #include "../include/disasm.h"
-#else
-#include "../include/altdisasm.h"
-#define Disassembler AltDisassembler
-#endif
 #include "../include/object.h"
 #include "../include/utils.h"
 #include "../include/vm.h"
@@ -49,87 +44,51 @@ static Size reconstructBytes(vByte::const_iterator& it)
 	int numBytes = static_cast<int>(sizeof(Size));
 	Size value = 0;
 	for (int i = 0; i < numBytes; i++)
-		value = ((value << 8) | *(it + i));
+		value = ((value << 8) | *(++it));
 	return value;
 }
 
+#define RECON_INT(size) \
+	std::make_unique<Int<i##size>>(reconstructBytes<i##size>(it))
+
 static BaseUP reconstructInt(vByte::const_iterator& it)
 {
-	uint8_t size = *it;
-	it++;
+	ui8 size = *it;
 	switch (size)
 	{
-		case 1:
-		{
-			int8_t value = reconstructBytes<int8_t>(it);
-			return std::make_unique<Int<int8_t>>(value);
-		}
-
-		case 2:
-		{
-			int16_t value = reconstructBytes<int16_t>(it);
-			it++;
-			return std::make_unique<Int<int16_t>>(value);
-		}
-
-		case 4:
-		{
-			int32_t value = reconstructBytes<int32_t>(it);
-			it += 3;
-			return std::make_unique<Int<int32_t>>(value);
-		}
-
-		case 8:
-		{
-			int64_t value = reconstructBytes<int64_t>(it);
-			it += 7;
-			return std::make_unique<Int<int64_t>>(value);
-		}
+		case 1:	return RECON_INT(8);
+		case 2:	return RECON_INT(16);
+		case 4:	return RECON_INT(32);
+		case 8:	return RECON_INT(64);
 	}
 
 	return nullptr; // Unreachable.
 }
+
+#undef RECON_INT
+
+#define RECON_UINT(size) \
+	std::make_unique<UInt<ui##size>>(reconstructBytes<ui##size>(it))
 
 static BaseUP reconstructUInt(vByte::const_iterator& it)
 {
-	uint8_t size = *it;
-	it++;
+	ui8 size = *it;
 	switch (size)
 	{
-		case 1:
-		{
-			uint8_t value = reconstructBytes<uint8_t>(it);
-			return std::make_unique<UInt<uint8_t>>(value);
-		}
-
-		case 2:
-		{
-			uint16_t value = reconstructBytes<uint16_t>(it);
-			it++;
-			return std::make_unique<UInt<uint16_t>>(value);
-		}
-
-		case 4:
-		{
-			uint32_t value = reconstructBytes<uint32_t>(it);
-			it += 3;
-			return std::make_unique<UInt<uint32_t>>(value);
-		}
-
-		case 8:
-		{
-			uint64_t value = reconstructBytes<uint64_t>(it);
-			it += 7;
-			return std::make_unique<UInt<uint64_t>>(value);
-		}
+		case 1:	return RECON_UINT(8);
+		case 2:	return RECON_UINT(16);
+		case 4:	return RECON_UINT(32);
+		case 8:	return RECON_UINT(64);
 	}
 
 	return nullptr; // Unreachable.
 }
 
+#undef RECON_UINT
+
 static BaseUP reconstructDec(vByte::const_iterator& it)
 {	
-	uint8_t size = *it;
+	ui8 size = *it;
 	it++;
 	switch (size)
 	{
@@ -137,7 +96,7 @@ static BaseUP reconstructDec(vByte::const_iterator& it)
 		{
 			float value;
 			char bytes[sizeof(float)];
-			for (uint8_t i = 0; i < size; i++)
+			for (ui8 i = 0; i < size; i++)
 			{
 				bytes[i] = static_cast<char>(*it);
 				it++;
@@ -153,7 +112,7 @@ static BaseUP reconstructDec(vByte::const_iterator& it)
 		{
 			double value;
 			char bytes[sizeof(double)];
-			for (uint8_t i = 0; i < size; i++)
+			for (ui8 i = 0; i < size; i++)
 			{
 				bytes[i] = static_cast<char>(*it);
 				it++;
@@ -236,7 +195,7 @@ ByteCode readCache(std::ifstream& fileIn)
 		{
 			if (ch == 100)
 				break;
-			codeBytes.push_back(static_cast<uint8_t>(ch));
+			codeBytes.push_back(static_cast<ui8>(ch));
 		}
 
 		// fileIn.get(); // Skip POOL_START.
@@ -250,7 +209,7 @@ ByteCode readCache(std::ifstream& fileIn)
 		}
 
 		while ((ch = fileIn.get()) != EOF)
-			poolBytes.push_back(static_cast<uint8_t>(ch));
+			poolBytes.push_back(static_cast<ui8>(ch));
 
 		file = funcName;
 		return ByteCode(codeBytes, reconstructPool(poolBytes));
@@ -261,9 +220,15 @@ ByteCode readCache(std::ifstream& fileIn)
 }
 
 void optionLoad(const char* fileName)
-{
+{	
+	if (!ends_with(fileName, ".bch"))
+	{
+		std::cerr << "Invalid bytecode file.\n";
+		exit(65);
+	}
+
 	external = true;
-		
+
 	std::ifstream program(fileName, std::ios::binary);
 	if (program.fail())
 	{
@@ -278,8 +243,14 @@ void optionLoad(const char* fileName)
 
 void optionDis(const char* fileName)
 {
+	if (!ends_with(fileName, ".bch"))
+	{
+		std::cerr << "Invalid bytecode file.\n";
+		exit(65);
+	}
+
 	external = true;
-		
+
 	std::ifstream program(fileName, std::ios::binary);
 	if (program.fail())
 	{
