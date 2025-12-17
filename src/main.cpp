@@ -1,13 +1,16 @@
-#include "../include/bytecode.h"
-#include "../include/common.h"
-#ifndef ALT // Testing.
 #include "../include/compiler.h"
 #include "../include/disasm.h"
-#endif
+#include "../include/vm.h"
+#include "../include/bytecode.h"
+#include "../include/common.h"
 #include "../include/lexer.h"
 #include "../include/main_utils.h"
 #include "../include/tokprinter.h"
-#include "../include/vm.h"
+#ifdef COMP_AST
+#include "../include/astcompiler.h"
+#include "../include/parser.h"
+#endif
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -15,14 +18,6 @@
 #include <string>
 #include <string_view>
 #include <unordered_map>
-
-// Testing.
-#ifdef ALT
-#include "../include/altcompiler.h"
-#include "../include/altdisasm.h"
-#define Compiler AltCompiler
-#define Disassembler AltDisassembler
-#endif
 
 std::string file = "";
 bool external = false;
@@ -71,11 +66,57 @@ static std::unordered_map<std::string_view, ArgvOption> options = {
 	{"-d", DIS_PROGRAM}
 };
 
+// Optimization to run a cached bytecode
+// file if it is recent enough rather than
+// re-compiling.
+// Should be updated if we get to multi-file
+// compilation.
+static bool cacheOptimize(ArgvOption option)
+{
+	using namespace std::filesystem;
+	if (exists(file))
+	{
+		std::string cached = 
+			file.substr(0, file.size() - 3) + ".bch";
+		if (exists(cached) && 
+			(last_write_time(cached) >= last_write_time(file)))
+		{
+			if (option == CACHE_BYTECODE)
+				return true; // Nothing to do.
+			
+			std::ifstream code(cached);
+			ByteCode chunk = readCache(code);
+
+			if (option == EMIT_BYTECODE)
+			{
+				Disassembler dis(chunk);
+				dis.disassembleCode();
+				return true;
+
+			}
+
+			if (option == EXECUTE)
+			{
+				VM vm;
+				vm.executeCode(chunk);
+				return true;
+			}
+		}
+	}
+	else
+	{
+		std::cerr << "Failed to open file.\n";
+		exit(66);
+	}
+
+	return false;
+}
+
 static void runFile(const char* fileName, ArgvOption option = EXECUTE)
 {
 	if (!fileNameCheck(fileName))
 	{
-		std::cerr << "Invalid file name.\n";
+		std::cerr << "Invalid Choice file.\n";
 		exit(65);
 	}
 	
@@ -92,7 +133,14 @@ static void runFile(const char* fileName, ArgvOption option = EXECUTE)
 		return;
 	}
 
+	if (cacheOptimize(option))
+		return;
+
 	std::string code = readFile(fileName);
+	#ifdef COMP_AST
+		ASTCompiler compiler;
+	#endif
+	VM vm; // Must persist for the entire execution.
 
 	// Performing tokenization outside.
 	Lexer lexer;
@@ -105,8 +153,24 @@ static void runFile(const char* fileName, ArgvOption option = EXECUTE)
 	}
 
 	// Perform compilation outside.
-	Compiler compiler(tokens);
-	ByteCode& chunk = compiler.compile();
+	#ifdef COMP_AST
+		Parser parser;
+		StmtVec& program = parser.parseToAST(tokens);
+
+		#ifdef TYPE
+			// Perform type-checking here.
+		#endif
+
+		#ifdef OPT
+			// Optimize here.
+		#endif
+
+		ByteCode& chunk = compiler.compile(program);
+	#else
+		Compiler compiler(tokens);
+		ByteCode& chunk = compiler.compile();
+	#endif
+
 	if (option == EMIT_BYTECODE)
 	{
 		Disassembler dis(chunk);
@@ -121,7 +185,6 @@ static void runFile(const char* fileName, ArgvOption option = EXECUTE)
 	}
 
 	// Execution logic.
-	VM vm;
 	vm.executeCode(chunk);
 }
 
@@ -138,6 +201,10 @@ static void repl(ArgvOption option = EXECUTE)
 	file = "";
 
 	std::string line;
+	#ifdef COMP_AST
+		ASTCompiler compiler;
+	#endif
+	VM vm; // Must persist for the entire execution.
 	while (true)
 	{
 		std::cout << ">>> ";
@@ -154,8 +221,25 @@ static void repl(ArgvOption option = EXECUTE)
 				continue;
 			}
 
-			Compiler compiler(tokens);
-			ByteCode& chunk = compiler.compile();
+			// Perform compilation outside.
+			#ifdef COMP_AST
+				Parser parser;
+				StmtVec& program = parser.parseToAST(tokens);
+
+				#ifdef TYPE
+					// Perform type-checking here.
+				#endif
+
+				#ifdef OPT
+					// Optimize here.
+				#endif
+
+				ByteCode& chunk = compiler.compile(program);
+			#else
+				Compiler compiler(tokens);
+				ByteCode& chunk = compiler.compile();
+			#endif
+
 			if (option == EMIT_BYTECODE)
 			{
 				Disassembler dis(chunk);
@@ -163,7 +247,6 @@ static void repl(ArgvOption option = EXECUTE)
 				continue;
 			}
 
-			VM vm;
 			vm.executeCode(chunk);
 		}
 		else
@@ -173,6 +256,10 @@ static void repl(ArgvOption option = EXECUTE)
 
 int main(int argc, const char* argv[])
 {   
+	using namespace std::chrono;
+	
+	auto begin = high_resolution_clock::now();
+
 	if (argc == 3)
 		runFile(argv[2], options[argv[1]]);
 	else if (argc == 2)
@@ -186,5 +273,9 @@ int main(int argc, const char* argv[])
 	else
 		repl();
 	
+	auto end = high_resolution_clock::now();
+	auto time = duration_cast<milliseconds>(end - begin);
+	std::cout << "Time: " << (long double) time.count() / 1000 << '\n';
+
 	return 0;
 }
