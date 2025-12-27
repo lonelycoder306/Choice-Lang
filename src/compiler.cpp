@@ -184,64 +184,21 @@ void Compiler::primary()
 {
     if (consumeTok(TOK_NUM))
     {
-        auto value = GETV(GET_NUM(previousTok).value, int_type);
-        BaseUP ptr = VAL_PTR(value, Int<int_type>);
+        BaseUP ptr = VAL_PTR(GET_TOK_V(previousTok, i64), Int);
         code.loadRegConst(std::move(ptr), previousReg);
         reserveReg();
     }
 
     else if (consumeTok(TOK_NUM_U))
     {
-        auto value = GETV(GET_NUM(previousTok).value, uint_type);
-        BaseUP ptr = VAL_PTR(value, UInt<uint_type>);
+        BaseUP ptr = VAL_PTR(GET_TOK_V(previousTok, ui64), UInt);
         code.loadRegConst(std::move(ptr), previousReg);
         reserveReg();
     }
 
     else if (consumeTok(TOK_NUM_DEC))
     {
-        auto value = GETV(GET_NUM(previousTok).value, dec_type);
-        BaseUP ptr = VAL_PTR(value, Dec<dec_type>);
-        code.loadRegConst(std::move(ptr), previousReg);
-        reserveReg();
-    }
-
-    else if (consumeTok(TOK_NUM_S))
-    {
-        BaseUP ptr;
-        switch (GET_SIZE(previousTok))
-        {
-            case 8:     ptr = VAL_PTR(GET_VAL(previousTok, i8),  INT_TYPE(8));      break;
-            case 16:    ptr = VAL_PTR(GET_VAL(previousTok, i16), INT_TYPE(16));     break;
-            case 32:    ptr = VAL_PTR(GET_VAL(previousTok, i32), INT_TYPE(32));     break;
-            case 64:    ptr = VAL_PTR(GET_VAL(previousTok, i64), INT_TYPE(64));     break;
-        }
-        code.loadRegConst(std::move(ptr), previousReg);
-        reserveReg();
-    }
-
-    else if (consumeTok(TOK_NUM_US))
-    {
-        BaseUP ptr;
-        switch (GET_SIZE(previousTok))
-        {
-            case 8:     ptr = VAL_PTR(GET_VAL(previousTok, ui8),  UINT_TYPE(8));    break;
-            case 16:    ptr = VAL_PTR(GET_VAL(previousTok, ui16), UINT_TYPE(16));   break;
-            case 32:    ptr = VAL_PTR(GET_VAL(previousTok, ui32), UINT_TYPE(32));   break;
-            case 64:    ptr = VAL_PTR(GET_VAL(previousTok, ui64), UINT_TYPE(64));   break;
-        }
-        code.loadRegConst(std::move(ptr), previousReg);
-        reserveReg();
-    }
-
-    else if (consumeTok(TOK_NUM_DEC_S))
-    {
-        BaseUP ptr;
-        switch (GET_SIZE(previousTok))
-        {
-            case 32:    ptr = VAL_PTR(GET_VAL(previousTok, float),  Dec<float>);     break;
-            case 64:    ptr = VAL_PTR(GET_VAL(previousTok, double), Dec<double>);    break;
-        }
+        BaseUP ptr = VAL_PTR(GET_TOK_V(previousTok, double), Dec);
         code.loadRegConst(std::move(ptr), previousReg);
         reserveReg();
     }

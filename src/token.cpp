@@ -8,11 +8,3 @@ Token::Token(TokenType type, std::string_view text, Value content,
                 ui16 line, ui8 position) :
     type(type), text(text), content(content), 
     line(line), position(position) {}
-
-// NumLiteral.
-
-NumLiteral::NumLiteral(size_t size, literalVar value)
-{
-	this->size = size;
-	this->value = value;
-}

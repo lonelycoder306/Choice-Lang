@@ -1,6 +1,7 @@
 #include "chainTable.h"
 #include "../include/astcompiler.h"
 #include "../include/bytecode.h"
+#include "../include/common.h"
 #include "../include/error.h"
 #include "../include/opcodes.h"
 #include "../include/vartable.h"
@@ -278,66 +279,23 @@ DEF(LiteralExpr)
 {
     Token tok = node->value;
     
-    if (tok.type == TOK_NUM)
+    if ((tok.type == TOK_NUM))
     {
-        auto value = GETV(GET_NUM(tok).value, int_type);
-        BaseUP ptr = VAL_PTR(value, Int<int_type>);
+        BaseUP ptr = VAL_PTR(GET_TOK_V(tok, i64), Int);
         code.loadRegConst(std::move(ptr), previousReg);
         reserveReg();
     }
 
-    else if (tok.type == TOK_NUM_U)
+    else if ((tok.type == TOK_NUM_U))
     {
-        auto value = GETV(GET_NUM(tok).value, uint_type);
-        BaseUP ptr = VAL_PTR(value, UInt<uint_type>);
+        BaseUP ptr = VAL_PTR(GET_TOK_V(tok, ui64), UInt);
         code.loadRegConst(std::move(ptr), previousReg);
         reserveReg();
     }
 
-    else if (tok.type == TOK_NUM_DEC)
+    else if ((tok.type == TOK_NUM_DEC))
     {
-        auto value = GETV(GET_NUM(tok).value, dec_type);
-        BaseUP ptr = VAL_PTR(value, Dec<dec_type>);
-        code.loadRegConst(std::move(ptr), previousReg);
-        reserveReg();
-    }
-
-    else if (tok.type == TOK_NUM_S)
-    {
-        BaseUP ptr;
-        switch (GET_SIZE(tok))
-        {
-            case 8:     ptr = VAL_PTR(GET_VAL(tok, i8),  INT_TYPE(8));      break;
-            case 16:    ptr = VAL_PTR(GET_VAL(tok, i16), INT_TYPE(16));     break;
-            case 32:    ptr = VAL_PTR(GET_VAL(tok, i32), INT_TYPE(32));     break;
-            case 64:    ptr = VAL_PTR(GET_VAL(tok, i64), INT_TYPE(64));     break;
-        }
-        code.loadRegConst(std::move(ptr), previousReg);
-        reserveReg();
-    }
-
-    else if (tok.type == TOK_NUM_US)
-    {
-        BaseUP ptr;
-        switch (GET_SIZE(tok))
-        {
-            case 8:     ptr = VAL_PTR(GET_VAL(tok, ui8),  UINT_TYPE(8));    break;
-            case 16:    ptr = VAL_PTR(GET_VAL(tok, ui16), UINT_TYPE(16));   break;
-            case 32:    ptr = VAL_PTR(GET_VAL(tok, ui32), UINT_TYPE(32));   break;
-            case 64:    ptr = VAL_PTR(GET_VAL(tok, ui64), UINT_TYPE(64));   break;
-        }
-        code.loadRegConst(std::move(ptr), previousReg);
-        reserveReg();
-    }
-
-    else if (tok.type == TOK_NUM_DEC_S)
-    {
-        BaseUP ptr;
-        switch (GET_SIZE(tok))
-        {
-            case 32:    ptr = VAL_PTR(GET_VAL(tok, float),  Dec<float>);     break;
-            case 64:    ptr = VAL_PTR(GET_VAL(tok, double), Dec<double>);    break;
-        }
+        BaseUP ptr = VAL_PTR(GET_TOK_V(tok, double), Dec);
         code.loadRegConst(std::move(ptr), previousReg);
         reserveReg();
     }

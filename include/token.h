@@ -6,21 +6,8 @@
 #include <variant>
 using namespace Object;
 
-struct NumLiteral
-{
-	using literalVar = std::variant<i8, i16, i32, i64,
-									ui8, ui16, ui32, ui64,
-									float, double>;
-	
-	size_t		size; // 0 (= default), 8, 16, 32, 64
-	literalVar	value;
-
-	NumLiteral() = default;
-	NumLiteral(size_t size, literalVar value);
-};
-
 // Can hold a literal of any needed size.
-using Value = std::variant<NumLiteral, bool, std::string_view, void *>;
+using Value = std::variant<i64, ui64, double, bool, std::string_view, void *>;
 class Lexer;
 class TokenPrinter;
 class Compiler; class AltCompiler;
@@ -43,11 +30,8 @@ enum TokenType : ui8
 	// Literals.
 
 	TOK_NUM,			// 123 (default)
-	TOK_NUM_S,			// 123_i8 (S: Size)
 	TOK_NUM_U,			// 123_u
-	TOK_NUM_US,			// 123_u8 (S: size)
 	TOK_NUM_DEC,		// 1.23
-	TOK_NUM_DEC_S,		// 1.23_d32 (S: size)
 	TOK_STR_LIT,		// "Hello, world!"
 	TOK_TRUE,			// true
 	TOK_FALSE,			// false

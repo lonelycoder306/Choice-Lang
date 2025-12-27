@@ -10,13 +10,6 @@ class Compiler
     #define VAL_PTR(val, type) std::make_unique<type>(val)
     #define TOK_VAL_PTR(token, origType, newType) \
 		VAL_PTR(GET_TOK_V(token, origType), newType)
-
-    #define GET_NUM(token)  GET_TOK_V(token, NumLiteral)
-    #define GET_SIZE(token) GET_NUM(token).size
-    #define GET_VAL(token, type) GETV(GET_NUM(token).value, type)
-
-    #define INT_TYPE(size)  Int<i##size>
-    #define UINT_TYPE(size) UInt<ui##size>
 	
 	// For checking previous Boolean values we've evaluated.
 	// Will be useful when executing conditional jump instructions.

@@ -49,22 +49,15 @@ void ByteCode::loadRegConst(BaseUP constant, ui8 reg)
 
 	if (constant->type == OBJ_INT)
 	{
-		if (constant->size == 1)		ADD_SMALL_INT(constant, 8);
-		else if (constant->size == 2)	ADD_SMALL_INT(constant, 16);
-		else if (constant->size == 4)	ADD_SMALL_INT(constant, 32);
-		else if (constant->size == 8)	ADD_SMALL_INT(constant, 64);
+		Int* temp = static_cast<Int*>(constant.get());
+		ADD_IF_SMALL(temp->value);
 	}
-
 	else if (constant->type == OBJ_UINT)
 	{
-		if (constant->size == 1)		ADD_SMALL_UINT(constant, 8);
-		else if (constant->size == 2)	ADD_SMALL_UINT(constant, 16);
-		else if (constant->size == 4)	ADD_SMALL_UINT(constant, 32);
-		else if (constant->size == 8)
+		UInt* temp = static_cast<UInt*>(constant.get());
+		if (temp->value < INT64_MAX)
 		{
-			GET_CONST_T(constant, UInt<UINT_SIZE(64)>);
-			if (temp->value <= INT64_MAX)
-				ADD_SMALL_UINT(constant, 64);
+			ADD_IF_SMALL(temp->value);
 		}
 	}
 

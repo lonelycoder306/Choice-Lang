@@ -10,12 +10,6 @@ class Disassembler;
 
 class ByteCode
 {
-    #define INT_SIZE(size) i##size
-    #define UINT_SIZE(size) ui##size
-    #define GET_CONST_T(constant, type) \
-        type* temp = dynamic_cast<type*>(constant.get())
-    #define CHECK_VAL_T(constant, type) \
-        GET_CONST_T(constant, type); temp != nullptr
     #define ADD_IF_SMALL(value) \
         do { \
             if ((-3 < static_cast<i64>(value)) && (value < 3)) \
@@ -23,16 +17,6 @@ class ByteCode
                 addByte(static_cast<ui8>(value + 2)); \
                 return; \
             } \
-        } while (false)
-    #define ADD_SMALL_INT(constant, size) \
-        do { \
-            GET_CONST_T(constant, Int<INT_SIZE(size)>); \
-            ADD_IF_SMALL(temp->value); \
-        } while (false)
-    #define ADD_SMALL_UINT(constant, size) \
-        do { \
-            GET_CONST_T(constant, UInt<UINT_SIZE(size)>); \
-            ADD_IF_SMALL(temp->value); \
         } while (false)
 
     private:

@@ -84,126 +84,33 @@ void Lexer::consumeChars(char c, int count /* = 1 */)
 		consumeChar(c);
 }
 
-char Lexer::peekChar(int distance /* = 1 */)
+char Lexer::peekChar(int distance /* = 0 */)
 {
 	if (current + distance < code.length())
 		return code[current + distance];
 	return EOF;
 }
 
-char Lexer::previousChar(int distance /* = 1 */)
+char Lexer::previousChar(int distance /* = 0 */)
 {
 	if (current - distance > 1)
 		return code[current - distance - 1];
 	return EOF;
 }
 
-Value Lexer::intSizedValue(std::string_view text)
+Value Lexer::intValue(std::string_view text)
 {
-	if (ends_with(text, "8"))
-	{
-		text = text.substr(0, text.size() - 3);
-		return NumLiteral(8, static_cast<i8>(
-				std::stoi(std::string(text)))
-			);
-	}
-
-	else if (ends_with(text, "16"))
-	{
-		text = text.substr(0, text.size() - 4);
-		return NumLiteral(16, static_cast<i16>(
-				std::stoi(std::string(text)))
-			);
-	}
-
-	else if (ends_with(text, "32"))
-	{
-		text = text.substr(0, text.size() - 4);
-		return NumLiteral(32, static_cast<i32>(
-				std::stol(std::string(text)))
-			);
-	}
-
-	else if (ends_with(text, "64"))
-	{
-		text = text.substr(0, text.size() - 4);
-		return NumLiteral(64, static_cast<i64>(
-				std::stoll(std::string(text)))
-			);
-	}
-
-	return nullptr; // Unreachable.
+	return static_cast<i64>(std::stoll(std::string(text)));
 }
 
-Value Lexer::uIntSizedValue(std::string_view text)
+Value Lexer::uintValue(std::string_view text)
 {
-	if (ends_with(text, "_u"))
-	{
-		text = text.substr(0, text.size() - 2);
-		return NumLiteral(0, static_cast<uint_type>(
-				std::stoull(std::string(text))
-			));
-	}
-	
-	else if (ends_with(text, "8"))
-	{
-		text = text.substr(0, text.size() - 3);
-		return NumLiteral(8, static_cast<ui8>(
-				std::stoi(std::string(text))
-			));
-	}
-
-	else if (ends_with(text, "16"))
-	{
-		text = text.substr(0, text.size() - 4);
-		return NumLiteral(16, static_cast<ui16>(
-				std::stoi(std::string(text))
-			));
-	}
-
-	else if (ends_with(text, "32"))
-	{
-		text = text.substr(0, text.size() - 4);
-		return NumLiteral(32, static_cast<ui32>(
-				std::stoul(std::string(text))
-			));
-	}
-
-	else if (ends_with(text, "64"))
-	{
-		text = text.substr(0, text.size() - 4);
-		return NumLiteral(64, static_cast<ui64>(
-				std::stoull(std::string(text))
-			));
-	}
-
-	return nullptr; // Unreachable.
-}
-
-Value Lexer::intValue(const std::string_view& text)
-{	
-	return NumLiteral(0, static_cast<int_type>(
-			std::stoll(std::string(text))
-		));
+	return static_cast<ui64>(std::stoull(std::string(text)));
 }
 
 Value Lexer::decValue(std::string_view text)
 {
-	if (ends_with(text, "32"))
-	{
-		text = text.substr(0, text.size() - 4);
-		return NumLiteral(32, std::stof(std::string(text)));
-	}
-
-	else if (ends_with(text, "64"))
-	{
-		text = text.substr(0, text.size() - 4);
-		return NumLiteral(64, std::stod(std::string(text)));
-	}
-	
-	return NumLiteral(0, static_cast<dec_type>(
-			std::stod(std::string(text))
-		));
+	return static_cast<double>(std::stod(std::string(text)));
 }
 
 Value Lexer::stringValue(const std::string_view& text)
@@ -226,17 +133,18 @@ void Lexer::makeToken(TokenType type)
 	{
 		switch (type)
 		{
-			case TOK_NUM:		value = intValue(text);       	break;
-			case TOK_NUM_S:		value = intSizedValue(text);	break;
+			case TOK_NUM:
+				value = intValue(text);
+				break;
 			case TOK_NUM_U:
-			case TOK_NUM_US:
-				value = uIntSizedValue(text);
+				value = uintValue(text);
 				break;
 			case TOK_NUM_DEC:
-			case TOK_NUM_DEC_S:
 				value = decValue(text);
 				break;
-			case TOK_STR_LIT:	value = stringValue(text);		break;
+			case TOK_STR_LIT:
+				value = stringValue(text);
+				break;
 			case TOK_TRUE:
 			case TOK_FALSE:
 				value = boolValue(type);
@@ -253,100 +161,6 @@ void Lexer::makeToken(TokenType type)
 		column - (current - start));
 }
 
-bool Lexer::matchString(const std::string_view& str)
-{
-	int i = 0;
-	for (char c : str)
-	{
-		if (peekChar(i) != c)
-			return false;
-		i++;
-	}
-
-	for (size_t i = 0; i < str.size(); i++)
-		advance();
-
-	return true;
-}
-
-bool Lexer::matchStrings(const std::vector<std::string_view>& strs)
-{
-	for (std::string_view sv : strs)
-	{
-		if (matchString(sv))
-		return true;
-	}
-
-	return false;
-}
-
-void Lexer::numLiteral(TokenType type)
-{
-	if (type == TOK_NUM)
-	{
-		switch (peekChar())
-		{
-			case 'u':
-			{
-				advance();
-				if (isdigit(peekChar()))
-				{
-					if (matchStrings({"8", "16", "32", "64"}))
-					{
-						makeToken(TOK_NUM_US);
-						return;
-					}
-					else
-						// Column value may be inaccurate.
-						throw LexError(peekChar(), line, column,
-							"Invalid unsigned integer size.");
-				}
-				makeToken(TOK_NUM_U);
-				break;
-			}
-
-			case 'i':
-			{
-				advance();
-				if (isdigit(peekChar()))
-				{
-					if (matchStrings({"8", "16", "32", "64"}))
-					{
-						makeToken(TOK_NUM_S);
-						return;
-					}
-					else
-						// Column value may be inaccurate.
-						throw LexError(peekChar(), line, column,
-							"Invalid signed integer size.");
-				}
-				else
-					throw LexError(peekChar(), line, column,
-						"Must specify integer size when using _i modifier.");
-			}
-
-			default:
-				throw LexError(peekChar(), line, column,
-					"Invalid literal modifier for integer value.");
-		}
-	}
-
-	else if (type == TOK_NUM_DEC)
-	{
-		if (consumeChar('d'))
-		{
-			if (matchStrings({"32", "64"}))
-				makeToken(TOK_NUM_DEC_S);
-			else
-				throw LexError(peekChar(), line, column,
-					"Invalid floating-point value size.");
-		}
-		else
-			throw LexError(peekChar(), line, column,
-				"Must specify floating-point size using '_d' modifier.");
-	}
-}
-
 void Lexer::numToken()
 {
 	TokenType type;	
@@ -359,13 +173,19 @@ void Lexer::numToken()
 			advance();
 		type = TOK_NUM_DEC;
 	}
+	else if (consumeChar('_'))
+	{
+		// Check for 'u'.
+		if (peekChar() != 'u')
+			throw LexError(peekChar(), line, column,
+				"Can only add 'u' modifier after '_'.");
+		advance();
+		type = TOK_NUM_U;
+	}
 	else
 		type = TOK_NUM;
 
-	if (consumeChar('_'))
-		numLiteral(type);
-	else
-		makeToken(type);
+	makeToken(type);
 }
 
 void Lexer::stringToken()

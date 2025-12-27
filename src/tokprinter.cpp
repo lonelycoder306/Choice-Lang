@@ -7,18 +7,6 @@
 TokenPrinter::TokenPrinter(const vT& tokens) :
     tokens(tokens) {}
 
-static std::ostream& operator<<(std::ostream& os, const NumLiteral& lit)
-{
-    std::visit([](auto&& val) {
-        if (val < 256)
-            std::cout << static_cast<float>(val); // Cast to float will not affect integers.
-        else
-            std::cout << val;
-    }, lit.value);
-
-    return os;
-}
-
 static void printValue(Value value)
 {   
     std::visit([](auto&& val){

@@ -41,89 +41,28 @@ std::string readFile(const char* fileName)
 template<typename Size>
 static Size reconstructBytes(vByte::const_iterator& it)
 {
-	int numBytes = static_cast<int>(sizeof(Size));
 	Size value = 0;
-	for (int i = 0; i < numBytes; i++)
-		value = ((value << 8) | *(++it));
+	ui8 bytes[sizeof(Size)];
+	for (size_t i = 0; i < sizeof(Size); i++)
+		bytes[i] = *(it++);
+	it--;
+	std::memcpy(&value, &bytes[0], sizeof(Size));
 	return value;
 }
 
-#define RECON_INT(size) \
-	std::make_unique<Int<i##size>>(reconstructBytes<i##size>(it))
-
 static BaseUP reconstructInt(vByte::const_iterator& it)
 {
-	ui8 size = *it;
-	switch (size)
-	{
-		case 1:	return RECON_INT(8);
-		case 2:	return RECON_INT(16);
-		case 4:	return RECON_INT(32);
-		case 8:	return RECON_INT(64);
-	}
-
-	return nullptr; // Unreachable.
+	return std::make_unique<Int>(reconstructBytes<i64>(it));
 }
-
-#undef RECON_INT
-
-#define RECON_UINT(size) \
-	std::make_unique<UInt<ui##size>>(reconstructBytes<ui##size>(it))
 
 static BaseUP reconstructUInt(vByte::const_iterator& it)
 {
-	ui8 size = *it;
-	switch (size)
-	{
-		case 1:	return RECON_UINT(8);
-		case 2:	return RECON_UINT(16);
-		case 4:	return RECON_UINT(32);
-		case 8:	return RECON_UINT(64);
-	}
-
-	return nullptr; // Unreachable.
+	return std::make_unique<UInt>(reconstructBytes<ui64>(it));
 }
 
-#undef RECON_UINT
-
 static BaseUP reconstructDec(vByte::const_iterator& it)
-{	
-	ui8 size = *it;
-	it++;
-	switch (size)
-	{
-		case sizeof(float):
-		{
-			float value;
-			char bytes[sizeof(float)];
-			for (ui8 i = 0; i < size; i++)
-			{
-				bytes[i] = static_cast<char>(*it);
-				it++;
-			}
-			// We increment once more than needed
-			// after the last byte.
-			it--;
-			std::memcpy(&value, &bytes[0], size);
-			return std::make_unique<Dec<float>>(value);
-		}
-		
-		case sizeof(double):
-		{
-			double value;
-			char bytes[sizeof(double)];
-			for (ui8 i = 0; i < size; i++)
-			{
-				bytes[i] = static_cast<char>(*it);
-				it++;
-			}
-			it--;
-			std::memcpy(&value, &bytes[0], size);
-			return std::make_unique<Dec<double>>(value);
-		}
-	}
-
-	return nullptr; // Unreachable.
+{
+	return std::make_unique<Dec>(reconstructBytes<double>(it));
 }
 
 static BaseUP reconstructString(vByte::const_iterator& it)
