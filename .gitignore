@@ -1,12 +1,12 @@
 *.txt
 *.md
 !README.md
-*.exe
-*.ps1
 *.json
 *.ch
+*.bch
 extras/
 build/
 sources/
 VS Solution/
 .env
+choice
