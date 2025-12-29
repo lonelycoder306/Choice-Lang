@@ -9,16 +9,10 @@ VM::VM() :
 
 bool VM::checkNumOper(ui8 slot)
 {
-    if (registers[slot].index() == 0) // BaseUP.
-    {
-        ObjType type = std::get<BaseUP>(registers[slot])->type;
-        if (IS_NUM(type))
-            return true;
-    }
-    else if (registers[slot].index() == 1) // Integer.
-        return true;
+    if (HAS_TYPE(BaseUP, registers[slot])) // BaseUP.
+        return IS_NUM(OBJ_TYPE(registers[slot]));
 
-    return false;
+    return (HAS_TYPE(int, registers[slot])); // Integer.
 }
 
 bool VM::checkNumOpers(ui8 slot1, ui8 slot2)

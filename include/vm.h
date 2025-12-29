@@ -13,6 +13,9 @@ class ASTCompiler;
 
 class VM
 {
+    #define HAS_TYPE(type, val) std::holds_alternative<type>(val)
+    #define OBJ_TYPE(obj)       std::get<BaseUP>(obj)->type
+
     private:
         vByte::const_iterator ip;
         static constexpr int regSize = 256;
