@@ -1,7 +1,7 @@
 include .env
 
 CXX = g++
-# Includes for my separate chaining hash table implementation (found on Github).
+# Includes for my separate chaining hash table implementation (found on GitHub).
 CXXFLAGS = $(INCLUDE) $(INCLUDE_WSL) -std=c++17 -Wall -Wextra \
 			-Wno-unused-parameter -Wno-sign-compare \
 			-Werror -pedantic -g
