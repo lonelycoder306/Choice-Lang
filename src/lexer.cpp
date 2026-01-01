@@ -411,8 +411,7 @@ void Lexer::singleToken()
 			while ((peekChar() != '#') && !hitEnd())
 				advance();
 			if (hitEnd())
-				throw LexError(peekChar(), line, column,
-					"Unterminated comment.");
+				throw LexError('\0', line, 0, "Unterminated comment.");
 			advance();
 			break;
 		}
@@ -437,7 +436,8 @@ void Lexer::singleToken()
 			else if (isalpha(c) || c == '_')
 				identifierToken();
 			else
-				throw LexError(c, line, column, "Unrecognized token.");
+				// Column has been incremented, so we subtract 1.
+				throw LexError(c, line, column - 1, "Unrecognized token.");
 		}
 	}
 }
