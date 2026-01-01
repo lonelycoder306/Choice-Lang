@@ -1,8 +1,10 @@
 #include "../include/lexer.h"
+#include "../include/common.h"
 #include "../include/error.h"
 #include "../include/object.h"
 #include "../include/token.h"
 #include "../include/utils.h"
+#include <algorithm>
 #include <cctype>
 #include <cstring>
 #include <string>
@@ -96,23 +98,17 @@ char Lexer::previousChar(int distance /* = 0 */)
 	return EOF;
 }
 
-Value Lexer::intValue(std::string_view text)
+i64 Lexer::intValue(std::string_view text)
 {
 	return static_cast<i64>(std::stoll(std::string(text)));
 }
 
-Value Lexer::decValue(std::string_view text)
+double Lexer::decValue(std::string_view text)
 {
 	return static_cast<double>(std::stod(std::string(text)));
 }
 
-Value Lexer::stringValue(const std::string_view& text)
-{
-	// -2 to cut off the quote marks.
-	return text.substr(1, text.length() - 2);
-}
-
-Value Lexer::boolValue(TokenType type)
+bool Lexer::boolValue(TokenType type)
 {
 	return (type == TOK_TRUE);
 }
@@ -126,12 +122,12 @@ void Lexer::makeToken(TokenType type)
 	{
 		switch (type)
 		{
-			case TOK_NUM:		value = intValue(text);		break;
-			case TOK_NUM_DEC:	value = decValue(text);		break;
-			case TOK_STR_LIT:	value = stringValue(text);	break;
+			case TOK_NUM:		value.i = intValue(text);	break;
+			case TOK_NUM_DEC:	value.d = decValue(text);	break;
 			case TOK_TRUE:
-			case TOK_FALSE:		value = boolValue(type);	break;
-			case TOK_NULL:		value = "NULL";				break;
+			case TOK_FALSE:		value.b = boolValue(type);	break;
+			case TOK_NULL:		value.s = "NULL";			break;
+			// For string literals we use the token's own text later.
 			default: break;
 		}
 	}
@@ -179,8 +175,8 @@ void Lexer::stringToken()
 void Lexer::multiStringToken()
 {
 	// Before processing the quote.
-	int tempLine = line;
-	int tempColumn = column - 1; // Step back across the opening `.
+	ui16 tempLine = line;
+	ui8 tempColumn = column - 1; // Step back across the opening `.
 	
 	while ((peekChar() != '`') && !hitEnd())
 		advance();
@@ -190,10 +186,16 @@ void Lexer::multiStringToken()
 			"Unterminated multi-line string.");
 
 	advance(); // Consume final `.
-	stream.emplace_back(TOK_STR_LIT, 
-						code.substr(start, current - start),
-						code.substr(start, current - start),
-						tempLine, tempColumn);
+
+	// Temporarily swap.
+	std::swap(line, tempLine);
+	std::swap(column, tempColumn);
+
+	makeToken(TOK_STR_LIT);
+
+	// Restore back.
+	std::swap(line, tempLine);
+	std::swap(column, tempColumn);
 }
 
 TokenType Lexer::identifierType()

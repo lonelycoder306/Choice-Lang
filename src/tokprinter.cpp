@@ -1,4 +1,5 @@
 #include "../include/tokprinter.h"
+#include "../include/common.h"
 #include "../include/token.h"
 #include <iomanip>
 #include <iostream>
@@ -7,11 +8,20 @@
 TokenPrinter::TokenPrinter(const vT& tokens) :
     tokens(tokens) {}
 
-static void printValue(Value value)
-{   
-    std::visit([](auto&& val){
-        std::cout << std::boolalpha << val;
-    }, value);
+void TokenPrinter::printValue(const Token& token)
+{
+    switch (token.type)
+    {
+        case TOK_NUM:   std::cout << token.content.i;   break;
+        case TOK_DEC:   std::cout << token.content.d;   break;
+        case TOK_STR_LIT:
+            std::cout << token.text.substr(1, token.text.size() - 2);
+            break;
+        case TOK_TRUE:  std::cout << "true";            break;
+        case TOK_FALSE: std::cout << "false";           break;
+        case TOK_NULL:  std::cout << token.content.s;   break;
+        default: UNREACHABLE();
+    }
 }
 
 static const char* typeStrings[] = {
@@ -58,7 +68,7 @@ void TokenPrinter::printToken(const Token& token)
             std::cout << "'\\n' ";
 
         if (IS_LITERAL(token.type))
-            printValue(token.content);
+            printValue(token);
     }
     
     std::cout << '\n';

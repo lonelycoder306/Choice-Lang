@@ -1,12 +1,19 @@
 #pragma once
 #include "common.h"
 #include "object.h"
+#include <cstddef>
 #include <iostream>
 #include <string_view>
 #include <variant>
 
 // Can hold a literal of any needed size.
-using Value = std::variant<i64, double, bool, std::string_view, void*>;
+typedef union Value {
+	const char*		s; // For NULL exclusively.
+	i64				i;
+	double			d;
+	bool			b;
+} Value;
+
 class Lexer;
 class TokenPrinter;
 class Compiler; class AltCompiler;
@@ -103,8 +110,8 @@ enum TokenType : ui8
 class Token
 {
 	private:
-		Value content; // The literal's actual value.
 		std::string_view text; // The actual text of the token.
+		Value content; // The literal's actual value.
 		ui16 line; // The line holding the token.
 		ui8 position; // The starting position of the token.
 		TokenType type;

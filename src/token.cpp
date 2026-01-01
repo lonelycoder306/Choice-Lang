@@ -1,10 +1,12 @@
 #include "../include/token.h"
 
 Token::Token() :
-    type(TOKEN_EOF), text(""), content(nullptr),
-    line(0), position(0) {}
+    text(""), line(0), position(0), type(TOKEN_EOF)
+{
+    content.s = nullptr;
+}
 
 Token::Token(TokenType type, std::string_view text, Value content,
                 ui16 line, ui8 position) :
-    type(type), text(text), content(content),
-    line(line), position(position) {}
+    text(text), content(content), line(line),
+    position(position), type(type) {}

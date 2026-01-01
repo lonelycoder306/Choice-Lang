@@ -6,6 +6,7 @@ class TokenPrinter
     private:
         const vT& tokens;
 
+        void printValue(const Token& token);
         void printToken(const Token& token);
     
     public:
