@@ -1,164 +1,256 @@
 #include "../include/object.h"
-#include <fstream>
-#include <sstream>
-#include <string>
-#include <string_view>
+#include <cstring>
+#include <iomanip>
+#include <iostream>
 #include <type_traits>
-using namespace Object;
+#include <variant>
 
-// Base.
+/* Heap obj. */
 
-Base::Base() :
-    type(OBJ_INVALID) {}
+HeapObj::HeapObj() :
+    type(HEAP_INVALID), refCount(0) {}
 
-Base::Base(ObjType type) :
-    type(type) {}
+HeapObj::HeapObj(HeapType type) :
+    type(type), refCount(0) {}
 
-std::string Base::printType()
+bool HeapObj::operator==(const HeapObj& other)
 {
-    return "OBJECT";
+    HeapObj* obj = const_cast<HeapObj*>(&other);
+
+    if (this->type != obj->type) return false;
+    
+    switch (type)
+    {
+        case HEAP_STRING:   return AS_STRING(this).str == AS_STRING(obj).str;
+        default:            UNREACHABLE();
+    }
 }
 
-void Base::emit(std::ofstream& os)
+std::string HeapObj::printVal()
 {
-    os.put(static_cast<char>(OBJ_BASE));
+    if (IS_STRING(this))
+        return AS_STRING(this).str;
+    return ""; // Temporary.
 }
 
-#define emitBytes(obj, type) \
-    do { \
-        os.put(static_cast<char>(obj)); \
-        char bytes[sizeof(type)]; \
-        std::memcpy(&bytes[0], &value, sizeof(type)); \
-        os.write(bytes, sizeof(type)); \
-    } while (false)
-
-// Int.
-
-Int::Int() :
-	Base(OBJ_INT), value(0) {}
-
-Int::Int(int64_t value) :
-	Base(OBJ_INT), value(value) {}
-
-std::string Int::print()
+std::string HeapObj::printType()
 {
-	return std::to_string(this->value);
+    switch (type)
+    {
+        case HEAP_BIGINT:   return "BIGINT";    break;
+        case HEAP_BIGDEC:   return "BIGDEC";    break;
+        case HEAP_STRING:   return "STRING";    break;
+        case HEAP_LIST:     return "LIST";      break;
+        case HEAP_TABLE:    return "TABLE";     break;
+        default:            return "";
+    }
 }
 
-std::string Int::printType()
+void HeapObj::emit(std::ofstream& os)
 {
-	return "INT64";
+    os.put(static_cast<char>(type));
+    
+    if (IS_STRING(this))
+    {
+        String temp = AS_STRING(this);
+        os.write(temp.str.data(), temp.str.size());
+        os.put('\0');
+    }
+    else if (IS_LIST(this))
+    {
+        // List* temp = static_cast<List*>(this);
+        // ...
+    }
+    else if (IS_TABLE(this))
+    {
+        // Table* temp = static_cast<Table*>(this);
+    }
 }
 
-void Int::emit(std::ofstream& os)
+String::String(const std::string& str) :
+    HeapObj(HEAP_STRING), str(str) {}
+
+String::String(const std::string_view& view) :
+    HeapObj(HEAP_STRING), str(view) {}
+
+
+/* Object. */
+
+Object::Object() :
+    type(OBJ_INVALID)
 {
-    emitBytes(OBJ_INT, int64_t);
+    AS_INT(*this) = 0;
 }
 
-// UInt.
-
-UInt::UInt() :
-	Base(OBJ_INT), value(0) {}
-
-UInt::UInt(uint64_t value) :
-	Base(OBJ_UINT), value(value) {}
-
-std::string UInt::print()
+void Object::clean()
 {
-	return std::to_string(this->value);
+    if (this->type == OBJ_HEAP)
+    {
+        HeapObj* temp = AS_HEAP_PTR(*this);
+        temp->refCount--;
+        if (temp->refCount == 0)
+            delete temp;
+    }
 }
 
-std::string UInt::printType()
+Object::Object(const Object& other) :
+    type(other.type), as(other.as)
 {
-	return "UINT64";
+    if (IS_HEAP_OBJ(*this))
+        AS_HEAP_PTR(*this)->refCount++;
 }
 
-void UInt::emit(std::ofstream& os)
+Object& Object::operator=(const Object& other)
 {
-    emitBytes(OBJ_UINT, uint64_t);
+    if (this != &other)
+    {
+        clean();
+        
+        this->type = other.type;
+        this->as = other.as;
+
+        if (IS_HEAP_OBJ(*this))
+            AS_HEAP_PTR(*this)->refCount++;
+    }
+
+    return *this;
 }
 
-// Dec.
-
-Dec::Dec() :
-	Base(OBJ_DEC), value(0.0) {}
-
-Dec::Dec(double value) :
-	Base(OBJ_DEC), value(value) {}
-
-std::string Dec::print()
+Object::Object(Object&& other) noexcept :
+    type(other.type), as(other.as)
 {
-	return std::to_string(this->value);
+    other.type = OBJ_INVALID; // To prevent deallocation when it is destroyed.
 }
 
-std::string Dec::printType()
+Object& Object::operator=(Object&& other) noexcept
 {
-	return "DEC";
+    if (this != &other)
+    {
+        clean();
+        
+        this->type = other.type;
+        this->as = other.as;
+
+        other.type = OBJ_INVALID;
+    }
+
+    return *this;
 }
 
-void Dec::emit(std::ofstream& os)
+Object::~Object()
 {
-    emitBytes(OBJ_DEC, double);
+    clean();
 }
 
-// Bool.
-
-Bool::Bool(bool value) :
-    Base(OBJ_BOOL), value(value) {}
-
-std::string Bool::print()
+bool Object::operator==(const Object& other)
 {
-    return (this->value ? "true" : "false");
+    if (this->type != other.type) return false;
+    
+    switch (this->type)
+    {
+        case OBJ_INT:   return AS_INT(*this) == AS_INT(other);
+        case OBJ_DEC:   return AS_DEC(*this) == AS_DEC(other);
+        case OBJ_BOOL:  return AS_BOOL(*this) == AS_BOOL(other);
+        case OBJ_NULL:  return true;
+        case OBJ_HEAP:  return AS_HEAP_VAL(*this) == AS_HEAP_VAL(other);
+        default:        UNREACHABLE();
+    }
 }
 
-std::string Bool::printType()
+bool Object::operator>(const Object& other)
 {
-    return "BOOL";
+    if (IS_NUM(*this) && IS_NUM(other))
+        return AS_NUM(*this) > AS_NUM(other);
+    return false;
 }
 
-// String.
-
-String::String() :
-    Base(OBJ_STRING), value("") {} // Default initialize to empty string.
-
-String::String(std::string_view& value) :
-    Base(OBJ_STRING), value(value) {}
-
-String String::makeString(const std::string& value)
+bool Object::operator<(const Object& other)
 {
-    String str;
-    str.alt = value;
-    return str;
+    if (IS_NUM(*this) && IS_NUM(other))
+        return AS_NUM(*this) < AS_NUM(other);
+    return false;
 }
 
-std::string String::print()
+std::string Object::printVal() const
 {
-    return std::string(this->value);
+    switch (type)
+    {
+        case OBJ_INT:   return std::to_string(AS_INT(*this));
+        case OBJ_DEC:   return std::to_string(AS_DEC(*this));
+        case OBJ_BOOL:  return (AS_BOOL(*this) ? "true" : "false");
+        case OBJ_NULL:  return "null";
+        case OBJ_HEAP:  return AS_HEAP_PTR(*this)->printVal();
+        default:        UNREACHABLE();
+    }
 }
 
-std::string String::printType()
+std::string Object::printType() const
 {
-    return "STRING";
+    switch (type)
+    {
+        case OBJ_INT:   return "INT";
+        case OBJ_DEC:   return "DEC";
+        case OBJ_BOOL:  return "BOOL";
+        case OBJ_NULL:  return "NULL";
+        case OBJ_HEAP:  return AS_HEAP_PTR(*this)->printType();
+        default:        UNREACHABLE();
+    }
 }
 
-void String::emit(std::ofstream& os)
+template<typename T>
+static void emitBytes(std::ofstream& os, ObjType type, T value)
 {
-    os.put(static_cast<char>(OBJ_STRING));
-    os.write(value.data(), value.size());
-    os.put('\0');
+    os.put(static_cast<char>(type));
+    char bytes[sizeof(value)];
+    std::memcpy(&bytes[0], &value, sizeof(value));
+    os.write(bytes, sizeof(value));
 }
 
-// Null.
-
-Null::Null() :
-    Base(OBJ_NULL) {}
-
-std::string Null::print()
-{
-    return "null";
+void Object::emit(std::ofstream& os) const
+{   
+    switch (type)
+    {
+        case OBJ_INT:   emitBytes(os, OBJ_INT, AS_INT(*this));  break;
+        case OBJ_DEC:   emitBytes(os, OBJ_DEC, AS_DEC(*this));  break;
+        case OBJ_HEAP:
+        {
+            os.put(static_cast<char>(OBJ_HEAP));
+            AS_HEAP_PTR(*this)->emit(os);
+            break;
+        }
+        default: break;
+    }
 }
 
-std::string Null::printType()
+
+/* Type Mismatch Error Class.*/
+
+TypeMismatch::TypeMismatch(const std::string& message, varType expect,
+    varType actual) :
+        message(message), expect(expect), actual(actual) {}
+
+static std::string objTypes[] = {
+    "int", "dec", "bool", "null", "num"
+};
+
+static std::string heapTypes[] = {
+    "bigint", "bigdec", "string", "list",
+    "table"
+};
+
+void TypeMismatch::report()
 {
-    return "NULL";
+    std::cerr << "Type mismatch: Expected type (";
+    if (std::holds_alternative<ObjType>(expect))
+        std::cerr << objTypes[GETV(expect, ObjType)];
+    else
+        std::cerr << heapTypes[GETV(expect, HeapType)];
+    std::cerr << ") but found (";
+    if (std::holds_alternative<ObjType>(actual))
+        std::cerr << objTypes[GETV(actual, ObjType)];
+    else
+        std::cerr << heapTypes[GETV(actual, HeapType)];
+    std::cerr << ") instead.\n";
+    std::cerr << std::setw(15) << "";
+    std::cerr << message << '\n';
 }

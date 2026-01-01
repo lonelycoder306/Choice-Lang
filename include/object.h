@@ -1,147 +1,164 @@
 #pragma once
-#include <climits>
+#include "common.h"
+#include "opcodes.h"
 #include <cstdint>
-#include <cstring>
 #include <fstream>
 #include <memory>
-#include <sstream>
-#include <string>
-#include <string_view>
-#include <type_traits>
+#include <string.h>
 #include <variant>
 
-namespace Object
+enum ObjType
 {
-	// Basic type aliases.
-	
-	enum ObjType : uint8_t
-	{
-		OBJ_BASE,
-		OBJ_INT,
-		OBJ_UINT,
-		OBJ_DEC,
-		OBJ_BOOL,
-		OBJ_STRING,
-		OBJ_NULL,
-		OBJ_INVALID
-	};
+    OBJ_INT,
+    OBJ_DEC,
+    OBJ_BOOL,
+    OBJ_NULL,
+    // OBJ_NUM only used with TypeMismatch (below).
+    // Not to be stored in any Object.
+    OBJ_NUM,
+    OBJ_HEAP,
+    OBJ_INVALID,
+};
 
-	struct TypeMismatch // General type mismatch error class.
-	{
-		std::string_view message;
-		ObjType first;
-		ObjType second;
-	};
-	
-	struct Base
-	{   
-		ObjType type;   // Object type.
+enum HeapType
+{
+    HEAP_BIGINT,
+    HEAP_BIGDEC,
+    HEAP_STRING,
+    HEAP_LIST,
+    HEAP_TABLE,
+    HEAP_INVALID
+};
 
-		Base();
-		virtual ~Base() = default;
-		Base(ObjType type);
+struct HeapObj
+{
+    HeapType type;
+    int refCount;
 
-		virtual std::string print() = 0;
-		virtual std::string printType();
-		virtual void emit(std::ofstream& is);
+    HeapObj();
+    HeapObj(HeapType type);
+    virtual ~HeapObj() = default;
 
-		// virtual bool operator==(const Base& other) const;
-		// virtual Base& operator+(const Base& other) const;
-		// virtual Base& operator-(const Base& other) const;
-	};
+    bool operator==(const HeapObj& other);
 
-	using BaseUP = std::unique_ptr<Base>;
+    std::string printVal();
+    std::string printType();
+    void emit(std::ofstream& os);
+};
 
-	struct Num : public Base
-	{
-		union value {
-			int64_t i;
-			uint64_t u;
-			double d;
-		} as;
-	};
-	
-	struct Int : public Base
-	{
-		int64_t value;
+struct String : public HeapObj
+{
+    std::string str;
 
-		Int();
-		Int(int64_t value);
+    String(const std::string& str);
+    String(const std::string_view& view);
+};
 
-		std::string print() override;
-		std::string printType() override;
-		void emit(std::ofstream& is) override;
-	};
+struct List : public HeapObj
+{
 
-	struct UInt : public Base
-	{
-		uint64_t value;
+};
 
-		UInt();
-		UInt(uint64_t value);
+struct Table : public HeapObj
+{
 
-		std::string print() override;
-		std::string printType() override;
-		void emit(std::ofstream& is) override;
-	};
+};
 
-	struct Dec : public Base
-	{
-		double value;
+#define IS_STRING(ptr)  ((ptr)->type == HEAP_STRING)
+#define IS_LIST(ptr)    ((ptr)->type == HEAP_LIST)
+#define IS_TABLE(ptr)   ((ptr)->type == HEAP_TABLE)
 
-		Dec();
-		Dec(double value);
+#define AS_STRING(obj)  (*(static_cast<String*>(obj)))
+#define AS_LIST(obj)    (*(static_cast<List*>(obj)))
+#define AS_TABLE(obj)   (*(static_cast<Table*>(obj)))
 
-		std::string print() override;
-		std::string printType() override;
-		void emit(std::ofstream& is) override;
-	};
+class Object
+{
+    private:
+        void clean();
 
-	struct Bool : public Base
-	{
-		bool value;
+    public:
+        ObjType type;
+        union Value {
+            i64         intVal;
+            double      doubleVal;
+            bool        boolVal;
+            HeapObj*    heapVal;
+        } as;
 
-		Bool() = default;
-		Bool(bool value);
+        Object();
+        template<typename T>
+        Object(T val);
+        Object(const Object& other);
+        Object& operator=(const Object& other);
+        Object(Object&& other) noexcept;
+        Object& operator=(Object&& other) noexcept;
+        ~Object();
 
-		std::string print() override;
-		std::string printType() override;
-	};
+        bool operator==(const Object& other);
+        bool operator>(const Object& other);
+        bool operator<(const Object& other);
 
-	struct String : public Base
-	{
-		std::string_view value;
-		std::string alt;
+        std::string printVal() const;
+        std::string printType() const;
+        void emit(std::ofstream& os) const;
+};
 
-		String();
-		String(std::string_view& value);
+struct TypeMismatch // General type mismatch error class.
+{
+    using varType = std::variant<ObjType, HeapType>;
+    
+    std::string message;
+    varType expect;
+    varType actual;
 
-		// Factory method.
-		static String makeString(const std::string& value);
-		std::string print() override;
-		std::string printType() override;
-		void emit(std::ofstream& is) override;
-	};
+    TypeMismatch(const std::string& message, varType expect,
+        varType actual);
+    void report();
+};
 
-	struct List : public Base
-	{
-
-	};
-
-	struct Table : public Base
-	{
-
-	};
-
-	struct Null : public Base
-	{
-		Null();
-
-		std::string print() override;
-		std::string printType() override;
-	};
+template<typename T>
+Object::Object(T val)
+{
+    if constexpr (std::is_same_v<T, i64>)
+    {
+        type = OBJ_INT;
+        as.intVal = val;
+    }
+    else if constexpr (std::is_same_v<T, double>)
+    {
+        type = OBJ_DEC;
+        as.doubleVal = val;
+    }
+    else if constexpr (std::is_same_v<T, bool>)
+    {
+        type = OBJ_BOOL;
+        as.boolVal = val;
+    }
+    else if constexpr (std::is_same_v<T, nullptr_t>)
+    {
+        type = OBJ_NULL;
+        as.heapVal = val; // Dummy assignment.
+    }
+    else if constexpr (std::is_same_v<T, HeapObj*>)
+    {
+        type = OBJ_HEAP;
+        val->refCount = 1;
+        this->as.heapVal = val;
+    }
 }
 
-#define IS_NUM(type) \
-	((type == Object::OBJ_INT) || (type == Object::OBJ_UINT) \
-	|| (type == Object::OBJ_DEC))
+#define IS_INT(obj)         ((obj).type == OBJ_INT)
+#define IS_DEC(obj)         ((obj).type == OBJ_DEC)
+#define IS_BOOL(obj)        ((obj).type == OBJ_BOOL)
+#define IS_NULL(obj)        ((obj).type == OBJ_NULL)
+#define IS_HEAP_OBJ(obj)    ((obj).type == OBJ_HEAP)
+#define IS_VALID(obj)       ((obj).type != OBJ_INVALID)
+#define IS_NUM(obj)         (IS_INT(obj) || IS_DEC(obj))
+
+#define AS_INT(obj)         ((obj).as.intVal)
+#define AS_DEC(obj)         ((obj).as.doubleVal)
+#define AS_BOOL(obj)        ((obj).as.boolVal)
+#define AS_HEAP_PTR(obj)    ((obj).as.heapVal)
+#define AS_HEAP_VAL(obj)    (*((obj).as.heapVal))
+#define AS_NUM(obj)         ((obj).type == OBJ_INT ? AS_INT(obj) : AS_DEC(obj))
