@@ -4,8 +4,7 @@
 #include <string>
 #include <vector>
 
-#define COMP_AST
-//#define TIME_TOTAL
+// #define TIME_TOTAL
 #define TIME_RUN
 
 #define FALLTHROUGH() [[fallthrough]]
