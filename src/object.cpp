@@ -239,6 +239,8 @@ static std::string heapTypes[] = {
     "table"
 };
 
+#define GETV(variant, type) std::get<type>(variant)
+
 void TypeMismatch::report()
 {
     std::cerr << "Type mismatch: Expected type (";

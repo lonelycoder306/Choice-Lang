@@ -4,6 +4,10 @@
 #include <string>
 #include <vector>
 
+#define VERSION_MAJOR   0
+#define VERSION_MINOR   0
+#define VERSION_PATCH   1
+
 // #define TIME_TOTAL
 #define TIME_RUN
 
@@ -17,8 +21,6 @@
 #elif defined(_MSC_VER)
 #define UNREACHABLE() __assume(false)
 #endif
-
-#define GETV(variant, type) std::get<type>(variant)
 
 using i8        = int8_t;
 using i16       = int16_t;
