@@ -10,11 +10,11 @@
 #include <cmath>
 #include <cstring>
 #include <memory>
+#include <sstream>
 #include <string>
 #include <string_view>
 #include <unordered_map>
 #include <vector>
-using namespace Object;
 
 std::string readFile(const char* fileName)
 {
@@ -50,22 +50,17 @@ static Size reconstructBytes(vByte::const_iterator& it)
 	return value;
 }
 
-static BaseUP reconstructInt(vByte::const_iterator& it)
+static Object reconstructInt(vByte::const_iterator& it)
 {
-	return std::make_unique<Int>(reconstructBytes<i64>(it));
+	return Object(reconstructBytes<i64>(it));
 }
 
-static BaseUP reconstructUInt(vByte::const_iterator& it)
+static Object reconstructDec(vByte::const_iterator& it)
 {
-	return std::make_unique<UInt>(reconstructBytes<ui64>(it));
+	return Object(reconstructBytes<double>(it));
 }
 
-static BaseUP reconstructDec(vByte::const_iterator& it)
-{
-	return std::make_unique<Dec>(reconstructBytes<double>(it));
-}
-
-static BaseUP reconstructString(vByte::const_iterator& it)
+static Object reconstructString(vByte::const_iterator& it)
 {
 	std::string str;
 	while (static_cast<char>(*it) != '\0')
@@ -73,46 +68,46 @@ static BaseUP reconstructString(vByte::const_iterator& it)
 		str.push_back(static_cast<char>(*it));
 		it++;
 	}
-	auto strPtr = std::make_unique<String>(String::makeString(str));
-	// We have to explicitly make this assignment
-	// after the above call to makeString() since
-	// we're passing a temporary to std::make_unique,
-	// which means its string_view becomes invalidated 
-	// after the pointer is formed.
-	// This keeps the view valid:
-	strPtr->value = strPtr->alt;
-	return strPtr;
+
+	HeapObj* obj = new String(str);
+	return Object(obj);
 }
 
-// Reconstructor functions.
-static std::unordered_map<ObjType, 
-	std::function<BaseUP(vByte::const_iterator& it)>> recons = {
-		{OBJ_INT,		reconstructInt},
-		{OBJ_UINT,		reconstructUInt},
-		{OBJ_DEC,		reconstructDec},
-		{OBJ_STRING,	reconstructString}
-};
+static Object reconstructHeapObj(vByte::const_iterator& it)
+{
+	ObjType type = static_cast<ObjType>(*it);
+	it++;
+	switch (type)
+	{
+		case HEAP_STRING:	return reconstructString(it);
+		default:			return Object(); // Temporarily.
+	}
+}
 
 vObj reconstructPool(const vByte& poolBytes)
 {
-	auto it = poolBytes.begin();
 	vObj pool;
 
-	while (it != poolBytes.end())
+	for (auto it = poolBytes.begin(); it != poolBytes.end(); it++)
 	{
-		if (*it == OBJ_BASE)
-			it++;
-		else
+		ObjType type = static_cast<ObjType>(*it);
+		switch (type)
 		{
-			auto pos = recons.find(ObjType(*it));
-			if (pos != recons.end())
+			case OBJ_INT:
+				pool.push_back(reconstructInt(++it));
+				break;
+			case OBJ_DEC:
+				pool.push_back(reconstructDec(++it));
+				break;
+			case OBJ_HEAP:
+				pool.push_back(reconstructHeapObj(++it));
+				break;
+			default:
 			{
-				auto& func = pos->second;
-				pool.push_back(func(++it));
+				if ((type != OBJ_BOOL) && (type != OBJ_NULL))
+					std::cout << "Error: byte is "
+						<< static_cast<int>(*it) << ".\n";
 			}
-			else
-				std::cout << "Error: byte is " << static_cast<int>(*it) << ".\n";
-			it++;
 		}
 	}
 
@@ -146,15 +141,6 @@ ByteCode readCache(std::ifstream& fileIn)
 				break;
 			funcName.push_back(static_cast<char>(ch));
 		}
-
-		bool extraNullBytes = false;
-		while (ch == '\0') // In case of extra null bytes.
-		{
-			extraNullBytes = true;
-			ch = fileIn.get();
-		}
-		if (extraNullBytes)
-			fileIn.seekg(-1, std::ios::cur);
 
 		while ((ch = fileIn.get()) != EOF)
 			poolBytes.push_back(static_cast<ui8>(ch));

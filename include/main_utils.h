@@ -7,8 +7,6 @@
 #include <vector>
 #include <memory>
 
-using BaseUP = std::unique_ptr<Object::Base>;
-
 std::string readFile(const char* fileName);
 vObj reconstructPool(const vByte& poolBytes);
 ByteCode readCache(std::ifstream& fileIn);
