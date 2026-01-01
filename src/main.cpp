@@ -1,4 +1,10 @@
-#include "../include/compiler.h"
+#ifdef COMP_AST
+	#include "../include/astcompiler.h"
+	#include "../include/parser.h"
+#else
+	#include "../include/compiler.h"
+#endif
+
 #include "../include/disasm.h"
 #include "../include/vm.h"
 #include "../include/bytecode.h"
@@ -6,10 +12,6 @@
 #include "../include/lexer.h"
 #include "../include/main_utils.h"
 #include "../include/tokprinter.h"
-#ifdef COMP_AST
-#include "../include/astcompiler.h"
-#include "../include/parser.h"
-#endif
 #include <chrono>
 #include <filesystem>
 #include <fstream>
@@ -144,6 +146,8 @@ static void runFile(const char* fileName, ArgvOption option = EXECUTE)
 	std::string code = readFile(fileName);
 	#ifdef COMP_AST
 		ASTCompiler compiler;
+	#else
+		Compiler compiler;
 	#endif
 	VM vm; // Must persist for the entire execution.
 
@@ -172,8 +176,7 @@ static void runFile(const char* fileName, ArgvOption option = EXECUTE)
 
 		ByteCode& chunk = compiler.compile(program);
 	#else
-		Compiler compiler(tokens);
-		ByteCode& chunk = compiler.compile();
+		ByteCode& chunk = compiler.compile(tokens);
 	#endif
 
 	if (option == EMIT_BYTECODE)
@@ -218,6 +221,8 @@ static void repl(ArgvOption option = EXECUTE)
 	std::string line;
 	#ifdef COMP_AST
 		ASTCompiler compiler;
+	#else
+		Compiler compiler;
 	#endif
 	VM vm; // Must persist for the entire execution.
 	while (true)
@@ -251,8 +256,7 @@ static void repl(ArgvOption option = EXECUTE)
 
 				ByteCode& chunk = compiler.compile(program);
 			#else
-				Compiler compiler(tokens);
-				ByteCode& chunk = compiler.compile();
+				ByteCode& chunk = compiler.compile(tokens);
 			#endif
 
 			if (option == EMIT_BYTECODE)
