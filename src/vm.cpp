@@ -137,8 +137,8 @@ Object VM::arithOper(Opcode oper)
 
 inline Object VM::compareOper(Opcode op)
 {
-    Object a = registers[readByte()];
-    Object b = registers[readByte()];
+    const Object a = registers[readByte()];
+    const Object b = registers[readByte()];
     
     switch (op)
     {
