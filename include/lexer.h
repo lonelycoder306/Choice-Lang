@@ -36,7 +36,6 @@ class Lexer
         // Value conversion methods.
 
         Value intValue(std::string_view text);
-        Value uintValue(std::string_view text);
         Value decValue(std::string_view text);
         Value stringValue(const std::string_view& text);
         Value boolValue(TokenType type);

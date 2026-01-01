@@ -7,11 +7,9 @@
 #include <cstring>
 #include <string>
 #include <unordered_map>
-using namespace Object;
 
 static std::unordered_map<std::string_view, TokenType> keywords = {
 	{"int",     TOK_INT},
-	{"uint",	TOK_UINT},
 	{"dec",     TOK_DEC},
 	{"boolean", TOK_BOOL},
 	{"string",  TOK_STRING},
@@ -103,11 +101,6 @@ Value Lexer::intValue(std::string_view text)
 	return static_cast<i64>(std::stoll(std::string(text)));
 }
 
-Value Lexer::uintValue(std::string_view text)
-{
-	return static_cast<ui64>(std::stoull(std::string(text)));
-}
-
 Value Lexer::decValue(std::string_view text)
 {
 	return static_cast<double>(std::stod(std::string(text)));
@@ -133,27 +126,13 @@ void Lexer::makeToken(TokenType type)
 	{
 		switch (type)
 		{
-			case TOK_NUM:
-				value = intValue(text);
-				break;
-			case TOK_NUM_U:
-				value = uintValue(text);
-				break;
-			case TOK_NUM_DEC:
-				value = decValue(text);
-				break;
-			case TOK_STR_LIT:
-				value = stringValue(text);
-				break;
+			case TOK_NUM:		value = intValue(text);		break;
+			case TOK_NUM_DEC:	value = decValue(text);		break;
+			case TOK_STR_LIT:	value = stringValue(text);	break;
 			case TOK_TRUE:
-			case TOK_FALSE:
-				value = boolValue(type);
-				break;
-			case TOK_NULL:
-				value = "NULL";
-				break;
-			default:
-				break;
+			case TOK_FALSE:		value = boolValue(type);	break;
+			case TOK_NULL:		value = "NULL";				break;
+			default: break;
 		}
 	}
 	
@@ -172,15 +151,6 @@ void Lexer::numToken()
 		while (isdigit(peekChar()) && !hitEnd())
 			advance();
 		type = TOK_NUM_DEC;
-	}
-	else if (consumeChar('_'))
-	{
-		// Check for 'u'.
-		if (peekChar() != 'u')
-			throw LexError(peekChar(), line, column,
-				"Can only add 'u' modifier after '_'.");
-		advance();
-		type = TOK_NUM_U;
 	}
 	else
 		type = TOK_NUM;
