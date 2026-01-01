@@ -8,6 +8,8 @@
 //#define TIME_TOTAL
 #define TIME_RUN
 
+#define FALLTHROUGH() [[fallthrough]]
+
 #if defined(__cpp_lib_unreachable) // Check for C++23 support.
 #include <utility>
 #define UNREACHABLE() std::unreachable()
