@@ -357,11 +357,10 @@ void ASTCompiler::compileStmt(StmtUP& node)
     // Reset our registers.
 }
 
-#define MIN(a, b) (a < b ? a : b)
-
 ByteCode& ASTCompiler::compile(StmtVec& program)
 {
     code.clear();
+
     try
     {
         for (StmtUP& node : program)
