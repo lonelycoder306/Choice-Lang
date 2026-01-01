@@ -1,3 +1,5 @@
+#ifdef COMP_AST
+
 #include "chainTable.h"
 #include "../include/astcompiler.h"
 #include "../include/bytecode.h"
@@ -24,7 +26,7 @@ ASTCompiler::~ASTCompiler()
     delete varsWrapper;
 }
 
-void ASTCompiler::defVar(std::string name, ui8 reg , ui8 scope)
+void ASTCompiler::defVar(std::string name, ui8 reg, ui8 scope)
 {
     varsWrapper->vars[{name, scope}] = reg;
     varScopes.back().push_back(name);
@@ -374,3 +376,5 @@ ByteCode& ASTCompiler::compile(StmtVec& program)
 
     return code;
 }
+
+#endif
