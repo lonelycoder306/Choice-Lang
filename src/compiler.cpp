@@ -233,7 +233,6 @@ void Compiler::assignment()
             expression(); // Does not consume the ';'.
             code.addOp(OP_SET_VAR, *slot, value);
         }
-        freeReg();
     }
     else
         logicOr();
