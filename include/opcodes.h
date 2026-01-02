@@ -84,7 +84,7 @@ static std::string_view opNames[] = {
 	"OP_TWO", "OP_TRUE", "OP_FALSE", "OP_NULL",
     "OP_CONST",
 
-	"OP_ADD", "OP_SUB", "OP_MULT", "OP_DIV", "OP_POWER", 
+	"OP_ADD", "OP_SUB", "OP_MULT", "OP_DIV", "OP_POWER",
 	"OP_MOD", "OP_NEGATE",
 
 	/*"OP_DEF_VAR",*/ "OP_GET_VAR", "OP_SET_VAR",
