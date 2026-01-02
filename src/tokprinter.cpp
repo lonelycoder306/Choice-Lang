@@ -1,12 +1,32 @@
 #include "../include/tokprinter.h"
 #include "../include/common.h"
 #include "../include/token.h"
+#include <algorithm>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 
 TokenPrinter::TokenPrinter(const vT& tokens) :
     tokens(tokens) {}
+
+static std::string formatMultiLineString(const std::string_view& sv)
+{
+    std::string newStr(sv);
+
+    // Clear any unwanted whitespace characters.
+    newStr.erase(std::remove_if(newStr.begin(), newStr.end(), [](char c){
+        return ((c == '\r') || (c == '\f') || (c == '\v'));
+    }), newStr.end());
+
+    auto it = newStr.find('\n');
+    while (it != newStr.npos)
+    {
+        newStr.replace(it, 1, "\\n");
+        it = newStr.find('\n', it + 1);
+    }
+
+    return newStr;
+}
 
 void TokenPrinter::printValue(const Token& token)
 {
@@ -15,7 +35,9 @@ void TokenPrinter::printValue(const Token& token)
         case TOK_NUM:   std::cout << token.content.i;   break;
         case TOK_DEC:   std::cout << token.content.d;   break;
         case TOK_STR_LIT:
-            std::cout << token.text.substr(1, token.text.size() - 2);
+            std::cout << formatMultiLineString(
+                token.text.substr(1, token.text.size() - 2)
+            );
             break;
         case TOK_TRUE:  std::cout << "true";            break;
         case TOK_FALSE: std::cout << "false";           break;
@@ -62,8 +84,10 @@ void TokenPrinter::printToken(const Token& token)
         oss << "(" << token.line << ":" << static_cast<int>(token.position) << ")";
         std::cout << std::left << std::setw(10) << oss.str();
 
-        if (token.type != TOK_NEWLINE)
+        if ((token.type != TOK_NEWLINE) && (token.type != TOK_STR_LIT))
             std::cout << "'" << std::string(token.text) << "' ";
+        else if (token.type == TOK_STR_LIT)
+            std::cout << "'" << formatMultiLineString(token.text) << "' ";
         else
             std::cout << "'\\n' ";
 
