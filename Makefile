@@ -45,8 +45,8 @@ endif
 $(NAME): $(OBJS)
 	@$(CXX) $(CXXFLAGS) $^ -o $(NAME)
 
-ast: $(OBJS)
-	@$(CXX) $(AST) $(CXXFLAGS) $^ -o $(NAME)
+ast: CXXFLAGS += $(AST)
+ast: $(NAME)
 
 type: $(OBJS)
 	@$(CXX) $(AST) $(TYPE) $(CXXFLAGS) $^ -o $(NAME)
