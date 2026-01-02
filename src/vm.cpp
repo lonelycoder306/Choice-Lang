@@ -186,7 +186,7 @@ inline Object VM::unaryOper(Opcode op)
                     OBJ_NUM,
                     obj.type
                 );
-            return AS_NUM(obj) * -1;
+            return i64(AS_NUM(obj) * -1);
         }
         case OP_NOT: return !isTruthy(obj);
         case OP_BIT_COMP:
@@ -197,7 +197,7 @@ inline Object VM::unaryOper(Opcode op)
                     OBJ_INT,
                     obj.type
                 );
-            return ~AS_INT(obj);
+            return i64(~AS_INT(obj));
         }
         default: UNREACHABLE();
     }
@@ -222,7 +222,7 @@ void VM::executeOp(Opcode op, const vObj& pool)
         case OP_RETURN:
         {
             ui8 ret = readByte();
-            if (registers[ret].type != OBJ_INVALID)
+            if (IS_VALID(registers[ret]))
                 std::cout << registers[ret].printVal() << '\n';
             break;
         }
