@@ -8,10 +8,6 @@
 #include "../include/opcodes.h"
 #include "../include/token.h"
 #include "../include/vartable.h"
-#include <cstring>
-#include <iostream>
-#include <memory>
-#include <variant>
 
 constexpr bool accessFix = false;
 constexpr bool accessVar = true;
