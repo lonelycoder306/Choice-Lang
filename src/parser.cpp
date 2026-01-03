@@ -1,4 +1,4 @@
-//#ifdef COMP_AST
+#ifdef COMP_AST
 
 #include "../include/parser.h"
 #include "../include/astnodes.h"
@@ -341,4 +341,4 @@ StmtVec& Parser::parseToAST(const vT& tokens)
     return program;
 }
 
-//#endif
+#endif

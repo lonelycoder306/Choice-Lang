@@ -1,4 +1,4 @@
-//#ifdef COMP_AST
+#ifdef COMP_AST
 
 #include "chainTable.h"
 #include "../include/astcompiler.h"
@@ -374,4 +374,4 @@ ByteCode& ASTCompiler::compile(StmtVec& program)
     return code;
 }
 
-//#endif
+#endif
