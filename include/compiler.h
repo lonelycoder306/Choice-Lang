@@ -20,17 +20,15 @@ class Compiler
         Token currentTok;
         vT::const_iterator it;
         ui8 previousReg;
-        ui8 currentReg;
-        // The last register that contains a variable (initially 0).
-        ui8 lastVarReg;
         ui8 scope; // Our current lexical scope depth.
         std::vector<std::vector<std::string>> varScopes;
         TokCompVarsWrapper* varsWrapper;
 
         // For registers.
+        // Defined here for increased likelihood of inlining.
 
-        void freeReg();
-        void reserveReg();
+        inline void freeReg() { previousReg--; }
+        inline void reserveReg() { previousReg++; }
 
         // For variables.
 
@@ -40,16 +38,16 @@ class Compiler
 
         // Utilities.
 
-        void nextTok();
-        bool checkTok(TokenType type);
-        bool consumeTok(TokenType type);
+        inline void nextTok();
+        inline bool checkTok(TokenType type);
+        inline bool consumeTok(TokenType type);
         template<typename... Type>
-        bool consumeToks(Type... toks);
-        void matchError(TokenType type, std::string_view message);
-        bool consumeType();
+        inline bool consumeToks(Type... toks);
+        inline void matchError(TokenType type, std::string_view message);
+        inline bool consumeType();
         // Bring the compiler back to a proper state.
         void reset();
-        void matchType(std::string_view message = "");
+        inline void matchType(std::string_view message = "");
 
         // Condensed compiling function.
         void compileDescent(void (Compiler::*func)(), TokenType tok, Opcode op);

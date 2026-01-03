@@ -22,25 +22,12 @@ class TokCompVarsWrapper
 };
 
 Compiler::Compiler() :
-    previousReg(0), currentReg(1), lastVarReg(0),
-    scope(0), varScopes(1),
+    previousReg(0), scope(0), varScopes(1),
     varsWrapper(new TokCompVarsWrapper) {}
 
 Compiler::~Compiler()
 {
     delete varsWrapper;
-}
-
-void Compiler::freeReg()
-{
-    previousReg--;
-    currentReg--;
-}
-
-void Compiler::reserveReg()
-{
-    previousReg = currentReg;
-    currentReg++;
 }
 
 void Compiler::defVar(std::string name, ui8 reg)
@@ -61,7 +48,7 @@ void Compiler::popScope()
         varsWrapper->vars.remove({var, scope});
 }
 
-void Compiler::nextTok()
+inline void Compiler::nextTok()
 {
     if (currentTok.type != TOK_EOF)
     {
@@ -70,12 +57,12 @@ void Compiler::nextTok()
     }
 }
 
-bool Compiler::checkTok(TokenType type)
+inline bool Compiler::checkTok(TokenType type)
 {
     return (currentTok.type == type);
 }
 
-bool Compiler::consumeTok(TokenType type)
+inline bool Compiler::consumeTok(TokenType type)
 {
     if (checkTok(type))
     {
@@ -87,7 +74,7 @@ bool Compiler::consumeTok(TokenType type)
 }
 
 template<typename... Type>
-bool Compiler::consumeToks(Type... toks)
+inline bool Compiler::consumeToks(Type... toks)
 {
     for (TokenType type : {toks ...})
     {
@@ -99,13 +86,13 @@ bool Compiler::consumeToks(Type... toks)
 }
 
 // Basic implementation.
-void Compiler::matchError(TokenType type, std::string_view message)
+inline void Compiler::matchError(TokenType type, std::string_view message)
 {
     if (!consumeTok(type))
         throw CompileError(currentTok, std::string(message));
 }
 
-bool Compiler::consumeType()
+inline bool Compiler::consumeType()
 {
     for (int i = TOK_INT; i <= TOK_ANY; i++)
     {
@@ -117,7 +104,7 @@ bool Compiler::consumeType()
     return false;
 }
 
-void Compiler::matchType(std::string_view message /* = "" */)
+inline void Compiler::matchType(std::string_view message /* = "" */)
 {
     if (!consumeType())
         throw CompileError(currentTok, std::string(message));
@@ -157,6 +144,7 @@ void Compiler::varDecl()
     if (consumeTok(TOK_COLON))
         matchType("Expect variable type.");
 
+    ui8 slot = previousReg;
     if (consumeTok(TOK_EQUAL))
         expression();
     else if (declType == TOK_FIX)
@@ -164,16 +152,15 @@ void Compiler::varDecl()
             "Initializer required for fixed-value variable.");
     else
     {
-        code.loadReg(lastVarReg, OP_NULL);
+        code.loadReg(slot, OP_NULL);
         reserveReg();
     }
     matchError(TOK_SEMICOLON, "Expect ';' after variable declaration.");
 
     defVar(
         std::string(name.text),
-        lastVarReg
+        slot
     );
-    lastVarReg++;
 }
 
 void Compiler::statement()
@@ -187,15 +174,13 @@ void Compiler::statement()
 void Compiler::blockStmt()
 {
     scope++;
-    ui8 origVarReg = lastVarReg;
+    ui8 origVarReg = previousReg;
     while (!checkTok(TOK_RIGHT_BRACE) && !checkTok(TOK_EOF))
         declaration();
     matchError(TOK_RIGHT_BRACE, "Expect '}' after block.");
     popScope();
     scope--;
-    previousReg -= (lastVarReg - origVarReg);
-    currentReg -= (lastVarReg - origVarReg);
-    lastVarReg = origVarReg;
+    previousReg = origVarReg;
 }
 
 void Compiler::exprStmt()

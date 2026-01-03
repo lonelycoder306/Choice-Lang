@@ -17,8 +17,7 @@ class ASTCompVarsWrapper
 };
 
 ASTCompiler::ASTCompiler() :
-    previousReg(0), currentReg(1),
-    lastVarReg(0), scope(0), varScopes(1), // For global scope.
+    previousReg(0), scope(0), varScopes(1), // For global scope.
     varsWrapper(new ASTCompVarsWrapper) {}
 
 ASTCompiler::~ASTCompiler()
@@ -26,19 +25,19 @@ ASTCompiler::~ASTCompiler()
     delete varsWrapper;
 }
 
-void ASTCompiler::defVar(std::string name, ui8 reg, ui8 scope)
+inline void ASTCompiler::defVar(std::string name, ui8 reg)
 {
     varsWrapper->vars[{name, scope}] = reg;
     varScopes.back().push_back(name);
 }
 
-ui8* ASTCompiler::getVarSlot(const Token& token, ui8 scope)
+inline ui8* ASTCompiler::getVarSlot(const Token& token)
 {
     VarEntry entry(token.text, scope);
     return varsWrapper->vars.get(entry);
 }
 
-ui8* ASTCompiler::getVarSlot(ExprUP& node, ui8 scope)
+ui8* ASTCompiler::getVarSlot(ExprUP& node)
 {
     VarExpr* var = static_cast<VarExpr*>(node.release());
     UP(VarExpr) varUP = UP(VarExpr)(var);
@@ -47,27 +46,15 @@ ui8* ASTCompiler::getVarSlot(ExprUP& node, ui8 scope)
     return varsWrapper->vars.get(entry);
 }
 
-void ASTCompiler::popScope(ui8 scope)
+void ASTCompiler::popScope()
 {
     for (std::string& var : varScopes.back())
         varsWrapper->vars.remove({var, scope});
 }
 
-void ASTCompiler::freeReg()
-{
-    previousReg--;
-    currentReg--;
-}
-
-void ASTCompiler::reserveReg()
-{
-    previousReg = currentReg;
-    currentReg++;
-}
-
 DEF(VarDecl)
 {
-    ui8* slot = getVarSlot(node->name, scope);
+    ui8* slot = getVarSlot(node->name);
     if (slot != nullptr)
     {
         throw CompileError(node->name, "Variable '"
@@ -75,11 +62,12 @@ DEF(VarDecl)
             + "' is already defined in this scope.");
     }
     
+    ui8 varSlot = previousReg;
     if (node->init)
         compileExpr(node->init);
     else
     {
-        code.loadReg(previousReg, OP_NULL);
+        code.loadReg(varSlot, OP_NULL);
         // code.addOp(OP_DEF_VAR, previousReg, OP_NULL);
         reserveReg();
     }
@@ -92,10 +80,8 @@ DEF(VarDecl)
 
     defVar(
         std::string(node->name.text),
-        lastVarReg,
-        scope
+        varSlot
     );
-    lastVarReg++;
 }
 
 DEF(FunDecl) { (void) node; }
@@ -113,23 +99,21 @@ DEF(ExprStmt)
 DEF(BlockStmt)
 {
     scope++;
-    ui8 origVarReg = lastVarReg;
+    ui8 origVarReg = previousReg;
     varScopes.emplace_back();
     for (StmtUP& stmt : node->block)
         compileStmt(stmt);
-    popScope(scope);
+    popScope();
     varScopes.pop_back();
     scope--;
-    previousReg -= (lastVarReg - origVarReg);
-    currentReg -= (lastVarReg - origVarReg);
-    lastVarReg = origVarReg;
+    previousReg = origVarReg;
 }
 
 DEF(AssignExpr)
 {
     ui8 reg = previousReg;
     compileExpr(node->value);
-    ui8* ptr = getVarSlot(node->target, scope);
+    ui8* ptr = getVarSlot(node->target);
     // Temporarily assuming regular variables only.
     if (ptr == nullptr)
     {
@@ -267,7 +251,7 @@ DEF(CallExpr) { (void) node; }
 
 DEF(VarExpr)
 {
-    ui8* ptr = getVarSlot(node->name, scope);
+    ui8* ptr = getVarSlot(node->name);
     if (ptr == nullptr)
     {
         throw CompileError(node->name, "Undefined variable '"
@@ -340,8 +324,6 @@ void ASTCompiler::compileExpr(ExprUP& node)
 void ASTCompiler::compileStmt(StmtUP& node)
 {
     if (node == nullptr) return;
-
-    // ui8 reg = currentReg;
     
     switch (node->type)
     {
@@ -353,8 +335,6 @@ void ASTCompiler::compileStmt(StmtUP& node)
         case S_EXPR_STMT:   COMPILE(ExprStmt, node);    break;
         case S_BLOCK_STMT:  COMPILE(BlockStmt, node);   break;
     }
-
-    // Reset our registers.
 }
 
 ByteCode& ASTCompiler::compile(StmtVec& program)

@@ -26,24 +26,22 @@ class ASTCompiler
     private:
         ByteCode code;
         ui8 previousReg;
-        ui8 currentReg;
-        // The last register that contains a variable (initially 0).
-        ui8 lastVarReg;
         ui8 scope; // Our current lexical scope depth.
         std::vector<std::vector<std::string>> varScopes;
         ASTCompVarsWrapper* varsWrapper;
 
         // Variables.
 
-        void defVar(std::string name, ui8 reg, ui8 scope);
-        ui8* getVarSlot(const Token& token, ui8 scope);
-        ui8* getVarSlot(ExprUP& node, ui8 scope);
-        void popScope(ui8 scope);
+        inline void defVar(std::string name, ui8 reg);
+        inline ui8* getVarSlot(const Token& token);
+        ui8* getVarSlot(ExprUP& node);
+        void popScope();
 
         // Registers.
+        // Defined here for increased likelihood of inlining.
 
-        void freeReg();
-        void reserveReg();
+        inline void freeReg() { previousReg--; }
+        inline void reserveReg() { previousReg++; }
 
         // Declarations.
 
