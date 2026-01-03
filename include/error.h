@@ -9,7 +9,7 @@ class Error
 
 	public:
 		Error() = default;
-		Error(std::string message);
+		Error(const std::string& message);
 };
 
 class LexError : public Error
@@ -21,7 +21,8 @@ class LexError : public Error
 
 	public:
 		LexError() = default;
-		LexError(char c, ui16 line, ui8 position, std::string message);
+		LexError(char c, ui16 line, ui8 position,
+			const std::string& message);
 
 		void report();
 };
@@ -32,7 +33,7 @@ class CompileError : public Error
 		Token token;
 
 	public:
-		CompileError(const Token& token, std::string message);
+		CompileError(const Token& token, const std::string& message);
 
 		void report();
 };
