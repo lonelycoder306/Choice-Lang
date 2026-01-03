@@ -15,16 +15,27 @@
 #define FALLTHROUGH() [[fallthrough]]
 
 #if defined(__cpp_lib_unreachable) // Check for C++23 support.
-#include <utility>
-#define UNREACHABLE() std::unreachable()
+	#include <utility>
+	#define UNREACHABLE() std::unreachable()
 #elif defined(__GNUC__) || defined(__clang__)
-#define UNREACHABLE() __builtin_unreachable()
+	#define UNREACHABLE() __builtin_unreachable()
 #elif defined(_MSC_VER)
-#define UNREACHABLE() __assume(false)
+	#define UNREACHABLE() __assume(false)
+#endif
+
+#if defined(__cpp_lib_print) && defined(__cpp_lib_format)
+	#include <print>
+	#define FORMAT_PRINT std::print
+#else
+	#ifndef FMT_HEADER_ONLY
+		#define FMT_HEADER_ONLY
+	#endif
+	#include <fmt/base.h>
+	#include <fmt/core.h>
+	#define FORMAT_PRINT fmt::print
 #endif
 
 #ifndef NDEBUG
-#include <cstdio>
 #include <cstdlib>
 #define ASSERT(expr, msg) \
 	do { \
@@ -32,7 +43,7 @@
 			break; \
 		else \
 		{ \
-			printf("ASSERTION FAILED [%s: %s, %d]: %s.\n", \
+			FORMAT_PRINT("ASSERTION FAILED [%s: %s, %d]: %s.\n", \
 				(__FILE__), (__func__), (__LINE__), msg); \
 			exit(EXIT_FAILURE); \
 		} \
