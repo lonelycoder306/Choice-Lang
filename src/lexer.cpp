@@ -187,15 +187,8 @@ void Lexer::multiStringToken()
 
 	advance(); // Consume final `.
 
-	// Temporarily swap.
-	std::swap(line, tempLine);
-	std::swap(column, tempColumn);
-
-	makeToken(TOK_STR_LIT);
-
-	// Restore back.
-	std::swap(line, tempLine);
-	std::swap(column, tempColumn);
+	stream.emplace_back(TOK_STR_LIT, code.substr(start, current - start),
+		Value(), tempLine, tempColumn);
 }
 
 TokenType Lexer::identifierType()
