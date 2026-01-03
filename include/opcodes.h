@@ -73,7 +73,7 @@ enum Opcode : ui8 // Each opcode is a single byte.
 	OP_LONG_OPER,	// Operand is four bytes.
 
 	// For testing.
-	OP_LOAD_R,		// Load a constant pointer into a register.
+	OP_LOAD_R,		// Load a constant into a register.
 	OP_MOVE_R,		// Store a register's value in another register.
 };
 
