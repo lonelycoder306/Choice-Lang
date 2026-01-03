@@ -1,16 +1,26 @@
 #include "../include/disasm.h"
+#include "../include/common.h"
 #include "../include/opcodes.h"
-#include <iostream>
-#include <iomanip>
+
+#define PRINT_FULL_OFFSET
 
 Disassembler::Disassembler(const ByteCode& code) :
 	code(code), ip(code.block.begin()),
 	start(code.block.begin()) {}
 
+void Disassembler::printOpcode(std::string_view opName)
+{
+	#ifdef PRINT_FULL_OFFSET
+		FORMAT_PRINT("{:0>4} {:<15} ", ip - start, opName);
+	#else
+		FORMAT_PRINT("{:>4} {:<15} ", ip - start, opName); // Prints leading spaces, not zeros.
+	#endif
+}
+
 void Disassembler::printOperValue(const Object& oper)
 {
-	std::cout << "'" << oper.printVal() << "' ";
-	std::cout << oper.printType() << '\n';
+	FORMAT_PRINT("'{}' {}\n",
+		oper.printVal(), oper.printType());
 }
 
 ui8 Disassembler::restoreByte()
@@ -39,52 +49,38 @@ ui32 Disassembler::restoreLong()
 
 void Disassembler::singleOper(std::string_view opName)
 {
-	std::cout << std::right << std::setfill('0') 
-		<< std::setw(4) << static_cast<int>(ip - start) << ' ';
-	std::cout << std::left << std::setfill(' ') <<
-		std::setw(15) << opName << ' ';
-	std::cout << "R[" << static_cast<int>(*(ip + 1)) << "]\n";
+	printOpcode(opName);
+	FORMAT_PRINT("R[{}]\n", *(ip + 1));
 	
 	ip += 2;
 }
 
 void Disassembler::doubleOper(std::string_view opName)
 {
-	std::cout << std::right << std::setfill('0')
-		<< std::setw(4) << static_cast<int>(ip - start) << ' ';
-	std::cout << std::left << std::setfill(' ') <<
-		std::setw(15) << opName << ' ';
+	printOpcode(opName);
 
 	for (int i = 0; i < 2; i++)
-		std::cout << "R[" << static_cast<int>(*(ip + i + 1)) << "] ";
-	
-	std::cout << '\n';
+		FORMAT_PRINT("R[{}] ", *(ip + i + 1));
+	FORMAT_PRINT("\n");
 
 	ip += 3;
 }
 
 void Disassembler::tripleOper(std::string_view opName)
 {
-	std::cout << std::right << std::setfill('0')
-		<< std::setw(4) << static_cast<int>(ip - start) << ' ';
-	std::cout << std::left << std::setfill(' ') <<
-		std::setw(15) << opName << ' ';
+	printOpcode(opName);
 
 	for (int i = 0; i < 3; i++)
-		std::cout << "R[" << static_cast<int>(*(ip + i + 1)) << "] ";
-
-	std::cout << '\n';
+		FORMAT_PRINT("R[{}] ", *(ip + i + 1));
+	FORMAT_PRINT("\n");
 	
 	ip += 4;
 }
 
 void Disassembler::loadOper(std::string_view opName)
 {
-	std::cout << std::right << std::setfill('0')
-		<< std::setw(4) << static_cast<int>(ip - start) << ' ';
-	std::cout << std::left << std::setfill(' ') <<
-		std::setw(15) << opName << ' ';
-	std::cout << "R[" << static_cast<int>(*(ip + 1)) << "] ";
+	printOpcode(opName);
+	FORMAT_PRINT("R[{}] ", *(ip + 1));
 
 	ip += 2;
 	switch (*ip)
@@ -92,7 +88,7 @@ void Disassembler::loadOper(std::string_view opName)
 		case OP_BYTE_OPER:
 		{
 			ui8 operand = restoreByte();
-			std::cout << "C[" << static_cast<int>(operand) << "] ";
+			FORMAT_PRINT("C[{}] ", operand);
 			printOperValue(code.pool[operand]);
 			ip += 2;
 			break;
@@ -100,7 +96,7 @@ void Disassembler::loadOper(std::string_view opName)
 		case OP_SHORT_OPER:
 		{
 			ui16 operand = restoreShort();
-			std::cout << "C[" << operand << "] ";
+			FORMAT_PRINT("C[{}] ", operand);
 			printOperValue(code.pool[operand]);
 			ip += 3;
 			break;
@@ -108,13 +104,13 @@ void Disassembler::loadOper(std::string_view opName)
 		case OP_LONG_OPER:
 		{
 			ui32 operand = restoreLong();
-			std::cout << "C[" << operand << "] ";
+			FORMAT_PRINT("C[{}] ", operand);
 			printOperValue(code.pool[operand]);
 			ip += 5;
 			break;
 		}
 		default: // Direct constant loading instruction.
-			std::cout << opNames[*ip] << '\n';
+			FORMAT_PRINT("{}\n", opNames[*ip]);
 			ip += 1;
 	}
 }
@@ -139,9 +135,8 @@ void Disassembler::disassembleOp(ui8 byte)
 		// case OP_FREE_R:	singleOper("OP_FREE_R");	break;
 		default:
 		{
-			std::cout << std::setw(4) << std::setfill('0')
-				<< static_cast<int>(ip - start) << ' ';
-			std::cout << "UNKNOWN OPCODE " << static_cast<int>(byte) << '\n';
+			FORMAT_PRINT("{:0>4} UNKNOWN OPCODE {}\n",
+				ip - start, byte);
 			ip++;
 			break;
 		}
@@ -152,14 +147,13 @@ void Disassembler::disassembleCode()
 {
 	auto end = code.block.end();
 	if ((file != "") && (ip < end)) // ip < end -> We have some bytecode to print.
-		// std::cout << "=== CODE ===\n";
-		std::cout << "=== CODE [" << file << "] ===\n";
-	std::cout << "Bytes: " << code.block.size() << '\n';
+		FORMAT_PRINT("=== CODE [{}] ===\n", file);
+	FORMAT_PRINT("Bytes: {}\n", code.block.size());
 	int opers = 0;
 	while (ip < end)
 	{
 		disassembleOp(*ip);
 		opers++;
 	}
-	std::cout << "Instructions: " << opers << '\n';
+	FORMAT_PRINT("Instructions: {}\n", opers);
 }

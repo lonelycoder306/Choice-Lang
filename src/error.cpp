@@ -1,41 +1,43 @@
 #include "../include/error.h"
-#include <iostream>
+#include "../include/common.h"
+#include <cstdio> // For stderr.
 
 // Error.
 
-Error::Error(std::string message) :
+Error::Error(const std::string& message) :
 	message(message) {}
 
 // LexError.
 
-LexError::LexError(char c, ui16 line, ui8 position, std::string message) :
+LexError::LexError(char c, ui16 line, ui8 position,
+    const std::string& message) :
 	Error(message), errorChar(c), line(line), position(position) {}
 
 void LexError::report()
 {
     if (errorChar != '\0')
-        std::cerr << "Scan Error at '" << errorChar << "' [" << line << ":"
-        << static_cast<int>(position) << "]: ";
+        FORMAT_PRINT(stderr, "Scan error at '{}' [{}:{}]: {}\n",
+            errorChar, line, position, message);
     else
-        std::cerr << "Scan Error at line end [" << line << "]: ";
-    std::cerr << message << '\n';
+        FORMAT_PRINT(stderr, "Scan Error at line end [{}]: {}\n",
+            line, message);
 }
 
 // CompileError.
 
-CompileError::CompileError(const Token& token, std::string message) :
+CompileError::CompileError(const Token& token,
+    const std::string& message) :
 	Error(message), token(token) {}
 
 void CompileError::report()
 {
     std::cerr << "Compile Error";
+    FORMAT_PRINT(stderr, "Compile Error");
     if (token.type != TOK_EOF)
     {
-        std::cerr << " at '" << token.text << "'";
-        std::cerr << " [" << token.line << ":"
-            << static_cast<int>(token.position) << "]: ";
+        FORMAT_PRINT(" at '{}' [{}:{}]: {}\n",
+            token.text, token.line, token.position, message);
     }
     else
-        std::cerr << " at end: ";
-    std::cerr << message << '\n';
+        FORMAT_PRINT(" at end: {}\n", message);
 }

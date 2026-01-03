@@ -13,6 +13,7 @@
 #include "../include/main_utils.h"
 #include "../include/tokprinter.h"
 #include <chrono>
+#include <cstdio> // For stderr.
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -107,7 +108,7 @@ static bool cacheOptimize(ArgvOption option)
 	}
 	else
 	{
-		std::cerr << "Failed to open file.\n";
+		FORMAT_PRINT(stderr, "Failed to open file.\n");
 		exit(66);
 	}
 
@@ -118,7 +119,7 @@ static void runFile(const char* fileName, ArgvOption option = EXECUTE)
 {
 	if (!fileNameCheck(fileName))
 	{
-		std::cerr << "Invalid Choice file.\n";
+		FORMAT_PRINT(stderr, "Invalid Choice file.\n");
 		exit(65);
 	}
 	
@@ -202,7 +203,8 @@ static void runFile(const char* fileName, ArgvOption option = EXECUTE)
 	#if defined(TIME_RUN) || defined(TIME_TOTAL)
 		auto end = high_resolution_clock::now();
 		auto time = duration_cast<milliseconds>(end - begin);
-		std::cout << "Time: " << (long double) time.count() / 1000 << '\n';
+		FORMAT_PRINT("Time: {}\n",
+			static_cast<long double>(time.count() / 1000));
 	#endif
 }
 
@@ -212,7 +214,7 @@ static void repl(ArgvOption option = EXECUTE)
 	if (option == CACHE_BYTECODE || option == LOAD_PROGRAM ||
 		option == DIS_PROGRAM)
 	{
-		std::cerr << "Invalid command-line option for REPL mode.\n";
+		FORMAT_PRINT(stderr, "Invalid command-line option for REPL mode.\n");
 		exit(64);
 	}
 	
@@ -282,7 +284,7 @@ int main(int argc, const char* argv[])
 			runFile(argv[2], it->second);
 		else
 		{
-			std::cerr << "Invalid command-line option.\n";
+			FORMAT_PRINT(stderr, "Invalid command-line option.\n");
 			exit(64);
 		}
 	}

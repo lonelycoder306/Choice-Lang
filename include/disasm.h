@@ -1,7 +1,7 @@
 #include "bytecode.h"
 #include "common.h"
 #include "object.h"
-#include <optional>
+#include <string_view>
 
 class Disassembler
 {
@@ -12,6 +12,7 @@ class Disassembler
         vBit ip;
         vBit start;
 
+        void printOpcode(std::string_view opName);
         void printOperValue(const Object& oper);
 
         ui8 restoreByte();

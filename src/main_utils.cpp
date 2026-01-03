@@ -5,7 +5,7 @@
 #include "../include/object.h"
 #include "../include/utils.h"
 #include "../include/vm.h"
-#include <iostream>
+#include <cstdio> // For stderr.
 #include <cstring>
 #include <fstream>
 #include <sstream>
@@ -20,7 +20,7 @@ std::string readFile(const char* fileName)
 	std::ifstream file(fileName);
 	if (file.fail())
 	{
-		std::cerr << "Failed to open file.\n";
+		FORMAT_PRINT(stderr, "Failed to open file.\n");
 		exit(66);
 	}
 	
@@ -33,13 +33,13 @@ std::string readFile(const char* fileName)
 		return fileString;
 	}
 
-	std::cerr << "File is closed.\n";
+	FORMAT_PRINT(stderr, "File is closed.\n");
 	exit(66);
 }
 
 static inline void eofError()
 {
-	std::cerr << "Reached end of file prematurely.\n";
+	FORMAT_PRINT(stderr, "Reached end of file prematurely.\n");
 	exit(65);
 }
 
@@ -112,8 +112,8 @@ vObj reconstructPool(const vByte& poolBytes)
 			{
 				if ((type != OBJ_BOOL) && (type != OBJ_NULL))
 				{
-					std::cout << "Error: byte is "
-						<< static_cast<int>(type) << ".\n";
+					FORMAT_PRINT(stderr, "Error: byte is {}.\n",
+						static_cast<int>(type));
 					exit(65);
 				}
 			}
@@ -131,7 +131,7 @@ static void handleFileLength(std::ifstream& fileIn, size_t expected)
 			eofError();
 		else if (fileIn.fail())
 		{
-			std::cerr << "Encountered internal I/O error.\n";
+			FORMAT_PRINT(stderr, "Encountered internal I/O error.\n");
 			exit(74);
 		}
 	}
@@ -144,7 +144,7 @@ static void readMagic(std::ifstream& fileIn)
 	handleFileLength(fileIn, sizeof(magic));
 	if (strncmp(magic, "choice", 6) != 0)
 	{
-		std::cerr << "Improper magic flag for bytecode file.\n";
+		FORMAT_PRINT(stderr, "Improper magic flag for bytecode file.\n");
 		exit(65);
 	}
 }
@@ -195,7 +195,7 @@ ByteCode readCache(std::ifstream& fileIn)
 		return ByteCode(codeBytes, reconstructPool(poolBytes));
 	}
 
-	std::cerr << "File is closed.\n";
+	FORMAT_PRINT(stderr, "File is closed.\n");
 	exit(66);
 }
 
@@ -203,7 +203,7 @@ void optionLoad(const char* fileName)
 {	
 	if (!ends_with(fileName, ".bch"))
 	{
-		std::cerr << "Invalid bytecode file.\n";
+		FORMAT_PRINT(stderr, "Invalid bytecode file.\n");
 		exit(65);
 	}
 
@@ -212,7 +212,7 @@ void optionLoad(const char* fileName)
 	std::ifstream program(fileName, std::ios::binary);
 	if (program.fail())
 	{
-		std::cerr << "Failed to open file.\n";
+		FORMAT_PRINT(stderr, "Failed to open file.\n");
 		exit(66);
 	}
 
@@ -225,7 +225,7 @@ void optionDis(const char* fileName)
 {
 	if (!ends_with(fileName, ".bch"))
 	{
-		std::cerr << "Invalid bytecode file.\n";
+		FORMAT_PRINT(stderr, "Invalid bytecode file.\n");
 		exit(65);
 	}
 
@@ -234,7 +234,7 @@ void optionDis(const char* fileName)
 	std::ifstream program(fileName, std::ios::binary);
 	if (program.fail())
 	{
-		std::cerr << "Failed to open file.\n";
+		FORMAT_PRINT(stderr, "Failed to open file.\n");
 		exit(66);
 	}
 

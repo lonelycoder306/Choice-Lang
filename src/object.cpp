@@ -1,7 +1,7 @@
 #include "../include/object.h"
+#include <cstdio> // For stderr.
 #include <cstring>
-#include <iomanip>
-#include <iostream>
+#include <string_view>
 #include <type_traits>
 #include <variant>
 
@@ -230,11 +230,11 @@ TypeMismatch::TypeMismatch(const std::string& message, varType expect,
     varType actual) :
         message(message), expect(expect), actual(actual) {}
 
-static std::string objTypes[] = {
+static std::string_view objTypes[] = {
     "int", "dec", "bool", "null", "num"
 };
 
-static std::string heapTypes[] = {
+static std::string_view heapTypes[] = {
     "bigint", "bigdec", "string", "list",
     "table"
 };
@@ -243,17 +243,21 @@ static std::string heapTypes[] = {
 
 void TypeMismatch::report()
 {
-    std::cerr << "Type mismatch: Expected type (";
+    std::string_view expectSV;
     if (std::holds_alternative<ObjType>(expect))
-        std::cerr << objTypes[GETV(expect, ObjType)];
+        expectSV = objTypes[GETV(expect, ObjType)];
     else
-        std::cerr << heapTypes[GETV(expect, HeapType)];
-    std::cerr << ") but found (";
+        expectSV = heapTypes[GETV(expect, HeapType)];
+
+    std::string_view actualSV;
     if (std::holds_alternative<ObjType>(actual))
-        std::cerr << objTypes[GETV(actual, ObjType)];
+        actualSV = objTypes[GETV(actual, ObjType)];
     else
-        std::cerr << heapTypes[GETV(actual, HeapType)];
-    std::cerr << ") instead.\n";
-    std::cerr << std::setw(15) << "";
-    std::cerr << message << '\n';
+        actualSV = heapTypes[GETV(actual, HeapType)];
+    
+    FORMAT_PRINT(stderr,
+        "Type mismatch: Expected type ({}) but found ({}) instead.",
+        expectSV, actualSV
+    );
+    FORMAT_PRINT("{:>15}\n", message);
 }
