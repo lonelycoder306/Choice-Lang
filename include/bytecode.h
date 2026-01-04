@@ -26,10 +26,13 @@ class ByteCode
         ByteCode(const vByte& block);
         ByteCode(const vByte& block, const vObj& pool);
 
-        void loadReg(ui8 reg, ui8 op);
-        void loadRegConst(Object& constant, ui8 reg);
         template<typename Op, typename... Bytes>
         void addOp(Op op, Bytes... opers);
+
+        void loadReg(ui8 reg, ui8 op);
+        void loadRegConst(Object& constant, ui8 reg);
+        ui64 addJump(Opcode op, ui8 reg);
+        void patchJump(ui64 offset);
 
         void cacheStream(std::ofstream& os) const;
         void clearCode();

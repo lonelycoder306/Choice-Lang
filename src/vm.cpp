@@ -8,7 +8,8 @@ using namespace AST::Statement;
 using namespace AST::Expression;
 
 VM::VM() :
-    registers(std::make_unique<Object[]>(256)), regSlot(0) {}
+    registers(std::make_unique<Object[]>(256)), regSlot(0),
+    dis(nullptr) {}
 
 inline ui8 VM::readByte()
 {
@@ -237,6 +238,32 @@ void VM::executeOp(Opcode op, const vObj& pool)
         case OP_LOAD_R:
             loadOper(pool); // Could re-write this to be like the operators below.
             break;
+        case OP_JUMP_TRUE:
+        {
+            ui8 check = readByte();
+            ui16 jump = readShort();
+            if (isTruthy(registers[check]))
+            {
+                ip += jump;
+                #ifdef WATCH_EXEC
+                    this->dis->ip += jump;
+                #endif
+            }
+            break;
+        }
+        case OP_JUMP_FALSE:
+        {
+            ui8 check = readByte();
+            ui16 jump = readShort();
+            if (!isTruthy(registers[check]))
+            {
+                ip += jump;
+                #ifdef WATCH_EXEC
+                    this->dis->ip += jump;
+                #endif
+            }
+            break;
+        }
         case OP_GET_VAR:
         case OP_SET_VAR:
         {
@@ -297,8 +324,9 @@ void VM::executeCode(const ByteCode& code)
 
     #ifdef WATCH_EXEC
         Disassembler dis(code);
+        this->dis = &dis;
     #endif
-    
+
     while (ip < end)
     {
         try
@@ -318,4 +346,6 @@ void VM::executeCode(const ByteCode& code)
             error.report();
         }
     }
+
+    this->dis = nullptr;
 }

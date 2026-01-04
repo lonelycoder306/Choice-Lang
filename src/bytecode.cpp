@@ -85,6 +85,29 @@ void ByteCode::loadRegConst(Object& constant, ui8 reg)
 	}
 }
 
+ui64 ByteCode::addJump(Opcode op, ui8 reg)
+{
+	addBytes(static_cast<ui8>(op), reg);
+	ui64 offset = block.size();
+	block.push_back(static_cast<ui8>(0));
+	block.push_back(static_cast<ui8>(0));
+	return offset;
+}
+
+void ByteCode::patchJump(ui64 offset)
+{
+	ui16 diff = block.size() - offset - 2; // We've skipped the 2 jump bytes.
+	if (diff < (1 << 16))
+	{
+		block[offset] = static_cast<ui8>((diff >> 8) & 0xff);
+		block[offset + 1] = static_cast<ui8>(diff & 0xff);
+	}
+	else
+	{
+		// Jump is too big.
+	}
+}
+
 ui64 ByteCode::countPool() const
 {
 	ui64 count = 0;

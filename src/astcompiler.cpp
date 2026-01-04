@@ -103,6 +103,20 @@ DEF(VarDecl)
 DEF(FunDecl) { (void) node; }
 DEF(ClassDecl) { (void) node; }
 
+DEF(IfStmt)
+{
+    ui8 reg = previousReg;
+    compileExpr(node->condition);
+    ui64 falseJump = code.addJump(OP_JUMP_FALSE, reg);
+    compileStmt(node->trueBranch);
+    ui64 trueJump = code.addJump(OP_JUMP_TRUE, reg);
+    code.patchJump(falseJump);
+    if (node->falseBranch != nullptr)
+        compileStmt(node->falseBranch);
+    code.patchJump(trueJump);
+    freeReg();
+}
+
 DEF(ReturnStmt) { (void) node; }
 DEF(LoopStmt) { (void) node; }
 
@@ -349,6 +363,7 @@ void ASTCompiler::compileStmt(StmtUP& node)
         case S_VAR_DECL:    COMPILE(VarDecl, node);     break;
         case S_FUN_DECL:    COMPILE(FunDecl, node);     break;
         case S_CLASS_DECL:  COMPILE(ClassDecl, node);   break;
+        case S_IF_STMT:     COMPILE(IfStmt, node);      break;
         case S_RETURN_STMT: COMPILE(ReturnStmt, node);  break;
         case S_LOOP_STMT:   COMPILE(LoopStmt, node);    break;
         case S_EXPR_STMT:   COMPILE(ExprStmt, node);    break;

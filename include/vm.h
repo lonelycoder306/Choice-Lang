@@ -10,6 +10,8 @@
 #include <vector>
 using AST::Expression::VarExpr;
 
+class Disassembler;
+
 class VM
 {   
     private:
@@ -17,6 +19,7 @@ class VM
         static constexpr int regSize = 256;
         std::unique_ptr<Object[]> registers;
         ui8 regSlot;
+        Disassembler* dis;
 
         // Utilities.
 

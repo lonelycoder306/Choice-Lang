@@ -177,10 +177,32 @@ void Compiler::varDecl()
 
 void Compiler::statement()
 {
-    if (consumeTok(TOK_LEFT_BRACE))
+    if (consumeTok(TOK_IF))
+        ifStmt();   
+    else if (consumeTok(TOK_LEFT_BRACE))
         blockStmt();
     else
         exprStmt();
+}
+
+void Compiler::ifStmt()
+{
+    matchError(TOK_LEFT_PAREN, "Expect '(' after 'if'.");
+    ui8 reg = previousReg;
+    expression();
+    matchError(TOK_RIGHT_PAREN, "Expect ')' after condition.");
+
+    ui64 falseJump = code.addJump(OP_JUMP_FALSE, reg);
+    statement();
+    ui64 trueJump = code.addJump(OP_JUMP_TRUE, reg);
+    code.patchJump(falseJump);
+    
+    if (consumeTok(TOK_ELIF))
+        ifStmt();
+    else if (consumeTok(TOK_ELSE))
+        statement();
+    code.patchJump(trueJump);
+    freeReg();
 }
 
 void Compiler::blockStmt()

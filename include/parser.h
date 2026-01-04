@@ -34,6 +34,7 @@ class Parser
         // Statements.
 
         StmtUP statement();
+        StmtUP ifStmt();
         StmtUP returnStmt();
         StmtUP loopStmt();
         StmtUP blockStmt();

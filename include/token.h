@@ -22,7 +22,8 @@ class VM;
 
 enum TokenType : ui8
 {
-	// Characters.
+	/* Characters. */
+
 	TOK_LEFT_BRACKET,	// [
 	TOK_RIGHT_BRACKET,	// ]
 	TOK_LEFT_PAREN,		// (
@@ -32,8 +33,9 @@ enum TokenType : ui8
 	TOK_NEWLINE,		// \n
 	TOK_SEMICOLON,		// ;
 	TOK_COMMA,          // ,
+	TOK_QMARK,			// ?
 	
-	// Literals.
+	/* Literals. */
 
 	TOK_NUM,			// 123 (default)
 	TOK_NUM_DEC,		// 1.23
@@ -42,7 +44,9 @@ enum TokenType : ui8
 	TOK_FALSE,			// false
 	TOK_NULL,           // null
 
-	// Keywords.
+	/* Keywords. */
+
+	// Types.
 
 	TOK_INT,            // int
 	TOK_DEC,            // dec
@@ -53,6 +57,26 @@ enum TokenType : ui8
 	TOK_TABLE,			// table
 	TOK_ANY,			// any
 	TOK_CLASS,			// class
+
+	// Control flow.
+
+	TOK_IF,				// if
+	TOK_ELIF,			// elif
+	TOK_ELSE,			// else
+	TOK_WHILE,			// while
+	TOK_FOR,			// for
+	TOK_WHERE,			// where
+	TOK_REPEAT,			// repeat
+	TOK_UNTIL,			// until
+	TOK_BREAK,			// break
+	TOK_CONT,			// continue
+	TOK_MATCH,			// match
+	TOK_IS,				// is
+	TOK_FALL,			// fallthrough
+	TOK_END,			// end
+
+	// Miscellaneous.
+
 	TOK_AND,			// and
 	TOK_OR,				// or
 	TOK_RETURN,			// return
@@ -61,7 +85,7 @@ enum TokenType : ui8
 	TOK_FIELDS,			// fields
 	TOK_IN,				// in
 
-	// Arithmetic operators.
+	/* Arithmetic operators. */
 
 	TOK_PLUS,			// +
 	TOK_MINUS,			// -
@@ -70,7 +94,7 @@ enum TokenType : ui8
 	TOK_PERCENT,		// %
 	TOK_STAR_STAR,		// **
 
-	// Boolean/comparison operators.
+	/* Boolean/comparison operators. */
 
 	TOK_EQ_EQ,			// ==
 	TOK_BANG_EQ,		// !=
@@ -82,7 +106,8 @@ enum TokenType : ui8
 	TOK_AMP_AMP,		// &&
 	TOK_BAR_BAR,		// ||
 
-	// Bit-wise operators.
+	/* Bit-wise operators. */
+
 	TOK_AMP,			// &
 	TOK_BAR,			// |
 	TOK_UARROW,			// ^
@@ -90,7 +115,7 @@ enum TokenType : ui8
 	TOK_LEFT_SHIFT,		// <<
 	TOK_RIGHT_SHIFT,	// >>
 
-	// Variables and declarations.
+	/* Variables and declarations. */
 
 	TOK_IDENTIFIER,     // variableName
 	TOK_MAKE,			// make
@@ -98,7 +123,7 @@ enum TokenType : ui8
 	TOK_COLON,			// :
 	TOK_EQUAL,			// =
 
-	// Classes.
+	/* Classes. */
 
 	TOK_DOT,			// .
 	TOK_UNDER_UNDER,	// __

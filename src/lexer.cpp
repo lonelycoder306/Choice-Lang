@@ -11,26 +11,18 @@
 #include <unordered_map>
 
 static std::unordered_map<std::string_view, TokenType> keywords = {
-	{"int",     TOK_INT},
-	{"dec",     TOK_DEC},
-	{"boolean", TOK_BOOL},
-	{"string",  TOK_STRING},
-	{"func",	TOK_FUNC},
-	{"array",	TOK_ARRAY},
-	{"table",	TOK_TABLE},
-	{"class",	TOK_CLASS},
-	{"any",		TOK_ANY},
-	{"make",    TOK_MAKE},
-	{"fix",     TOK_FIX},
-	{"true",    TOK_TRUE},
-	{"false",   TOK_FALSE},
-	{"null",    TOK_NULL},
-	{"and",     TOK_AND},
-	{"or",      TOK_OR},
-	{"new",		TOK_NEW},
-	{"def",		TOK_DEF},
-	{"fields",	TOK_FIELDS},
-	{"in",		TOK_IN}
+	{"int", TOK_INT},		{"dec", TOK_DEC},		{"boolean", TOK_BOOL},
+	{"string", TOK_STRING},	{"func", TOK_FUNC},		{"array", TOK_ARRAY},
+	{"table", TOK_TABLE},	{"class", TOK_CLASS},	{"any",	TOK_ANY},
+	{"if", TOK_IF},			{"elif", TOK_ELIF},		{"else", TOK_ELSE},
+	{"while", TOK_WHILE},	{"for", TOK_FOR},		{"where", TOK_WHERE},
+	{"repeat", TOK_REPEAT},	{"until", TOK_UNTIL},	{"break", TOK_BREAK},
+	{"continue", TOK_CONT},	{"match", TOK_MATCH},	{"is", TOK_IS},
+	{"fallthrough", TOK_FALL}, {"end", TOK_END},	{"make", TOK_MAKE},
+	{"fix", TOK_FIX},		{"true", TOK_TRUE},		{"false", TOK_FALSE},
+	{"null", TOK_NULL},		{"and", TOK_AND},
+	{"or", TOK_OR},			{"new", TOK_NEW},		{"def", TOK_DEF},
+	{"fields", TOK_FIELDS},	{"in", TOK_IN}
 };
 
 Lexer::Lexer() :
@@ -255,10 +247,10 @@ void Lexer::singleToken()
 	
 	switch (c)
 	{
-		case '[': makeToken(TOK_LEFT_BRACKET); break;
-		case ']': makeToken(TOK_RIGHT_BRACKET); break;
-		case '(': makeToken(TOK_LEFT_PAREN); break;
-		case ')': makeToken(TOK_RIGHT_PAREN); break;
+		case '[': makeToken(TOK_LEFT_BRACKET);	break;
+		case ']': makeToken(TOK_RIGHT_BRACKET);	break;
+		case '(': makeToken(TOK_LEFT_PAREN);	break;
+		case ')': makeToken(TOK_RIGHT_PAREN);	break;
 		case '{':
 		{
 			if (state.inClass)
@@ -277,10 +269,10 @@ void Lexer::singleToken()
 			makeToken(TOK_RIGHT_BRACE);
 			break;
 		}
-		case ';': makeToken(TOK_SEMICOLON); break;
-		case ',': makeToken(TOK_COMMA); break;
+		case ';': makeToken(TOK_SEMICOLON);	break;
+		case ',': makeToken(TOK_COMMA);		break;
 
-		case '+': makeToken(TOK_PLUS); break;
+		case '+': makeToken(TOK_PLUS);		break;
 		case '-':
 		{
 			if (consumeChar('>'))
@@ -308,12 +300,13 @@ void Lexer::singleToken()
 				makeToken(TOK_SLASH);
 			break;
 		}
-		case '%': makeToken(TOK_PERCENT); break;
+		case '%': makeToken(TOK_PERCENT);	break;
 
-		case '^': makeToken(TOK_UARROW); break;
-		case '~': makeToken(TOK_TILDE); break;
-		case ':': makeToken(TOK_COLON); break;
-		case '.': makeToken(TOK_DOT); break;
+		case '^': makeToken(TOK_UARROW);	break;
+		case '~': makeToken(TOK_TILDE);		break;
+		case ':': makeToken(TOK_COLON);		break;
+		case '.': makeToken(TOK_DOT);		break;
+		case '?': makeToken(TOK_QMARK);		break;
 
 		case '=':
 		{

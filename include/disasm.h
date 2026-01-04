@@ -3,6 +3,8 @@
 #include "object.h"
 #include <string_view>
 
+class VM;
+
 class Disassembler
 {
     private:
@@ -23,9 +25,12 @@ class Disassembler
         void doubleOper(std::string_view opName);
         void tripleOper(std::string_view opName);
         void loadOper(std::string_view opName);
+        void jumpOper(std::string_view opName);
     
     public:
         Disassembler(const ByteCode& code);
         void disassembleOp(ui8 byte);
         void disassembleCode();
+
+        friend class VM;
 };

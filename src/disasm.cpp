@@ -115,6 +115,16 @@ void Disassembler::loadOper(std::string_view opName)
 	}
 }
 
+void Disassembler::jumpOper(std::string_view opName)
+{
+	printOpcode(opName);
+	ui8 reg = restoreByte();
+	ip++;
+	ui16 jump = restoreShort();
+	ip += 3;
+	FORMAT_PRINT("R[{}] -> {}\n", reg, ip - start + jump);
+}
+
 void Disassembler::disassembleOp(ui8 byte)
 {
 	switch (byte)
@@ -130,9 +140,11 @@ void Disassembler::disassembleOp(ui8 byte)
 		case OP_GET_VAR:	case OP_SET_VAR:
 			doubleOper(opNames[byte]);
 			break;
+		case OP_JUMP:		case OP_JUMP_TRUE:	case OP_JUMP_FALSE:
+			jumpOper(opNames[byte]);
+			break;
 		case OP_LOAD_R: loadOper("OP_LOAD_R");  	break;
 		case OP_RETURN:	singleOper("OP_RETURN");	break;
-		// case OP_FREE_R:	singleOper("OP_FREE_R");	break;
 		default:
 		{
 			FORMAT_PRINT("{:0>4} UNKNOWN OPCODE {}\n",

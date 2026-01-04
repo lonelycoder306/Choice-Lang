@@ -105,9 +105,30 @@ StmtUP Parser::varDecl()
 
 StmtUP Parser::statement()
 {
-    if (consumeTok(TOK_LEFT_BRACE))
+    if (consumeTok(TOK_IF))
+        return ifStmt();
+    else if (consumeTok(TOK_LEFT_BRACE))
         return blockStmt();
     return exprStmt();
+}
+
+StmtUP Parser::ifStmt()
+{
+    matchError(TOK_LEFT_PAREN, "Expect '(' after 'if'.");
+    ExprUP condition = expression();
+    matchError(TOK_RIGHT_PAREN, "Expect ')' after condition.");
+
+    StmtUP trueBranch = statement();
+    StmtUP falseBranch = nullptr;
+    if (consumeTok(TOK_ELIF))
+        falseBranch = ifStmt();
+    else if (consumeTok(TOK_ELSE))
+        falseBranch = statement();
+    return std::make_unique<IfStmt>(
+        std::move(condition),
+        std::move(trueBranch),
+        std::move(falseBranch)
+    );
 }
 
 StmtUP Parser::blockStmt()

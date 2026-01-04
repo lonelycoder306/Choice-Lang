@@ -28,6 +28,7 @@ namespace AST
             S_VAR_DECL,
             S_FUN_DECL,
             S_CLASS_DECL,
+            S_IF_STMT,
             S_RETURN_STMT,
             S_LOOP_STMT,
             S_EXPR_STMT,
@@ -67,6 +68,16 @@ namespace AST
             StmtVec methods;
 
             ClassDecl(Token& name, vT& fields, StmtVec& methods);
+        };
+
+        struct IfStmt : public Stmt
+        {
+            ExprUP condition;
+            StmtUP trueBranch;
+            StmtUP falseBranch;
+
+            IfStmt(ExprUP condition, StmtUP trueBranch,
+                StmtUP falseBranch);
         };
 
         struct ReturnStmt : public Stmt

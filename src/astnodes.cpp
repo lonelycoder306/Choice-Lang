@@ -19,6 +19,11 @@ ClassDecl::ClassDecl(Token& name, vT& fields, StmtVec& methods) :
     Stmt(S_CLASS_DECL),
     name(name), fields(fields), methods(std::move(methods)) {}
 
+IfStmt::IfStmt(ExprUP condition, StmtUP trueBranch, StmtUP falseBranch) :
+    Stmt(S_IF_STMT),
+    condition(std::move(condition)), trueBranch(std::move(trueBranch)),
+    falseBranch(std::move(falseBranch)) {}
+
 ReturnStmt::ReturnStmt(Token& keyword, ExprUP expr) :
     Stmt(S_RETURN_STMT),
     keyword(keyword), expr(std::move(expr)) {}

@@ -69,6 +69,7 @@ class Compiler
         // Statements.
 
         void statement();
+        void ifStmt();
         void returnStmt();
         void loopStmt();
         void blockStmt();
