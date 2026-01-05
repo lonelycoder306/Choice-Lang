@@ -272,10 +272,23 @@ void Lexer::singleToken()
 		case ';': makeToken(TOK_SEMICOLON);	break;
 		case ',': makeToken(TOK_COMMA);		break;
 
-		case '+': makeToken(TOK_PLUS);		break;
+		case '+':
+		{
+			if (consumeChar('+'))
+				makeToken(TOK_INCR);
+			else if (consumeChar('='))
+				makeToken(TOK_PLUS_EQ);
+			else
+				makeToken(TOK_PLUS);
+			break;
+		}
 		case '-':
 		{
-			if (consumeChar('>'))
+			if (consumeChar('-'))
+				makeToken(TOK_DECR);
+			else if (consumeChar('='))
+				makeToken(TOK_MINUS_EQ);
+			else if (consumeChar('>'))
 				makeToken(TOK_RARROW);
 			else
 				makeToken(TOK_MINUS);
@@ -283,8 +296,15 @@ void Lexer::singleToken()
 		}
 		case '*':
 		{
-			if (consumeChar('*'))
-				makeToken(TOK_STAR_STAR);
+			if (consumeChar('='))
+				makeToken(TOK_STAR_EQ);
+			else if (consumeChar('*'))
+			{
+				if (consumeChar('='))
+					makeToken(TOK_STAR_STAR_EQ);
+				else
+					makeToken(TOK_STAR_STAR);
+			}
 			else
 				makeToken(TOK_STAR);
 			break;
@@ -296,14 +316,37 @@ void Lexer::singleToken()
 				while ((peekChar() != '\n') && !hitEnd())
 					advance();
 			}
+			else if (consumeChar('='))
+				makeToken(TOK_SLASH_EQ);
 			else
 				makeToken(TOK_SLASH);
 			break;
 		}
-		case '%': makeToken(TOK_PERCENT);	break;
+		case '%':
+		{
+			if (consumeChar('='))
+				makeToken(TOK_PERCENT_EQ);
+			else
+				makeToken(TOK_PERCENT);
+			break;
+		}
 
-		case '^': makeToken(TOK_UARROW);	break;
-		case '~': makeToken(TOK_TILDE);		break;
+		case '^':
+		{
+			if (consumeChar('='))
+				makeToken(TOK_UARROW_EQ);
+			else
+				makeToken(TOK_UARROW);
+			break;
+		}
+		case '~':
+		{
+			if (consumeChar('='))
+				makeToken(TOK_TILDE_EQ);
+			else
+				makeToken(TOK_TILDE);
+			break;
+		}
 		case ':': makeToken(TOK_COLON);		break;
 		case '.': makeToken(TOK_DOT);		break;
 		case '?': makeToken(TOK_QMARK);		break;
@@ -327,7 +370,12 @@ void Lexer::singleToken()
 		case '>':
 		{
 			if (consumeChar('>'))
-				makeToken(TOK_RIGHT_SHIFT);
+			{
+				if (consumeChar('='))
+					makeToken(TOK_RSHIFT_EQ);
+				else
+					makeToken(TOK_RIGHT_SHIFT);
+			}
 			else if (consumeChar('='))
 				makeToken(TOK_GT_EQ);
 			else
@@ -337,7 +385,12 @@ void Lexer::singleToken()
 		case '<':
 		{
 			if (consumeChar('<'))
-				makeToken(TOK_LEFT_SHIFT);
+			{
+				if (consumeChar('='))
+					makeToken(TOK_LSHIFT_EQ);
+				else
+					makeToken(TOK_LEFT_SHIFT);
+			}
 			else if (consumeChar('='))
 				makeToken(TOK_LT_EQ);
 			else
@@ -349,6 +402,8 @@ void Lexer::singleToken()
 		{
 			if (consumeChar('&'))
 				makeToken(TOK_AMP_AMP);
+			else if (consumeChar('='))
+				makeToken(TOK_AMP_EQ);
 			else
 				makeToken(TOK_AMP);
 			break;
@@ -357,6 +412,8 @@ void Lexer::singleToken()
 		{
 			if (consumeChar('|'))
 				makeToken(TOK_BAR_BAR);
+			else if (consumeChar('='))
+				makeToken(TOK_BAR_EQ);
 			else
 				makeToken(TOK_BAR);
 			break;

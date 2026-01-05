@@ -140,8 +140,8 @@ void Disassembler::disassembleOp(ui8 byte)
 		case OP_BIT_SHIFT_L:
 			tripleOper(opNames[byte]);
 			break;
+		case OP_GET_VAR:	case OP_SET_VAR:	case OP_INCREMENT:	case OP_DECREMENT:
 		case OP_NEGATE:		case OP_NOT:		case OP_BIT_COMP:	case OP_MOVE_R:
-		case OP_GET_VAR:	case OP_SET_VAR:
 			doubleOper(opNames[byte]);
 			break;
 		case OP_JUMP:		case OP_JUMP_TRUE:	case OP_JUMP_FALSE:		case OP_LOOP:

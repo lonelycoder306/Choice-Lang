@@ -26,6 +26,8 @@ enum Opcode : ui8 // Each opcode is a single byte.
 	OP_POWER,		// Raise a value to a power.
 	OP_MOD,			// Take the modulus between two values.
 	OP_NEGATE,		// Invert a value's sign.
+	OP_INCREMENT,	// Increment a value.
+	OP_DECREMENT,	// Decrement a value.
 
 	// Variables.
 
@@ -83,7 +85,7 @@ static std::string_view opNames[] = {
     "OP_CONST",
 
 	"OP_ADD", "OP_SUB", "OP_MULT", "OP_DIV", "OP_POWER",
-	"OP_MOD", "OP_NEGATE",
+	"OP_MOD", "OP_NEGATE", "OP_INCREMENT", "OP_DECREMENT",
 
 	"OP_GET_VAR", "OP_SET_VAR",
 

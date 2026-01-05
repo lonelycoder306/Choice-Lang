@@ -190,6 +190,20 @@ inline Object VM::unaryOper(Opcode op)
     
     switch (op)
     {
+        case OP_INCREMENT:
+        case OP_DECREMENT:
+        {
+            if (!IS_NUM(obj))
+                throw TypeMismatch(
+                    "Cannot increment or decrement a non-numeric value.",
+                    OBJ_NUM,
+                    obj.type
+                );
+            if (IS_INT(obj))
+                return AS_INT(obj) + i64(1 * (op == OP_INCREMENT ? 1 : -1));
+            else
+                return AS_DEC(obj) + double(1 * (op == OP_INCREMENT ? 1 : -1));
+        }
         case OP_NEGATE:
         {
             if (!IS_NUM(obj))
@@ -198,7 +212,10 @@ inline Object VM::unaryOper(Opcode op)
                     OBJ_NUM,
                     obj.type
                 );
-            return i64(AS_NUM(obj) * -1);
+            if (IS_INT(obj))
+                return i64(AS_NUM(obj) * -1);
+            else
+                return (AS_NUM(obj) * -1);
         }
         case OP_NOT: return !isTruthy(obj);
         case OP_BIT_COMP:
@@ -323,7 +340,8 @@ void VM::executeOp(Opcode op, const vObj& pool)
         }
 
         // Unary operators.
-        case OP_NEGATE:     case OP_NOT:    case OP_BIT_COMP:
+        case OP_INCREMENT:      case OP_DECREMENT:      case OP_NEGATE:
+        case OP_NOT:            case OP_BIT_COMP:
         {
             ui8 dest = readByte();
             registers[dest] = unaryOper(op);

@@ -278,6 +278,8 @@ DEF(UnaryExpr)
     Opcode op;
     switch (node->oper)
     {
+        case TOK_INCR:  op = OP_INCREMENT;  break;
+        case TOK_DECR:  op = OP_DECREMENT;  break;
         case TOK_MINUS: op = OP_NEGATE;     break;
         case TOK_BANG:  op = OP_NOT;        break;
         case TOK_TILDE: op = OP_BIT_COMP;   break;

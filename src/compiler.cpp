@@ -1,4 +1,4 @@
-#ifndef COMP_AST
+//#ifndef COMP_AST
 
 #include "chainTable.h"
 #include "../include/compiler.h"
@@ -414,7 +414,8 @@ void Compiler::product()
 
 void Compiler::unary()
 {
-    if (consumeToks(TOK_MINUS, TOK_BANG, TOK_TILDE))
+    if (consumeToks(TOK_INCR, TOK_DECR, TOK_MINUS,
+        TOK_BANG, TOK_TILDE))
     {
         TokenType oper = previousTok.type;
         ui8 firstOper = previousReg;
@@ -423,6 +424,8 @@ void Compiler::unary()
         Opcode op;
         switch (oper)
         {
+            case TOK_INCR:  op = OP_INCREMENT;  break;
+            case TOK_DECR:  op = OP_DECREMENT;  break;
             case TOK_MINUS: op = OP_NEGATE;     break;
             case TOK_BANG:  op = OP_NOT;        break;
             case TOK_TILDE: op = OP_BIT_COMP;   break;
@@ -545,4 +548,4 @@ ByteCode& Compiler::compile(const vT& tokens)
     return code;
 }
 
-#endif
+//#endif

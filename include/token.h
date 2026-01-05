@@ -94,6 +94,15 @@ enum TokenType : ui8
 	TOK_PERCENT,		// %
 	TOK_STAR_STAR,		// **
 
+	TOK_INCR,			// ++
+	TOK_DECR,			// --
+	TOK_PLUS_EQ,		// +=
+	TOK_MINUS_EQ,		// -=
+	TOK_STAR_EQ,		// *=
+	TOK_SLASH_EQ,		// /=
+	TOK_PERCENT_EQ,		// %=
+	TOK_STAR_STAR_EQ,	// **=
+
 	/* Boolean/comparison operators. */
 
 	TOK_EQ_EQ,			// ==
@@ -114,6 +123,13 @@ enum TokenType : ui8
 	TOK_TILDE,          // ~
 	TOK_LEFT_SHIFT,		// <<
 	TOK_RIGHT_SHIFT,	// >>
+
+	TOK_AMP_EQ,			// &=
+	TOK_BAR_EQ,			// |=
+	TOK_UARROW_EQ,		// ^=
+	TOK_TILDE_EQ,		// ~=
+	TOK_LSHIFT_EQ,		// <<=
+	TOK_RSHIFT_EQ,		// >>=
 
 	/* Variables and declarations. */
 
