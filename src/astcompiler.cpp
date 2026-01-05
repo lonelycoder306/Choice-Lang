@@ -82,7 +82,6 @@ DEF(VarDecl)
     else
     {
         code.loadReg(varSlot, OP_NULL);
-        // code.addOp(OP_DEF_VAR, previousReg, OP_NULL);
         reserveReg();
     }
 
@@ -150,14 +149,13 @@ DEF(BlockStmt)
     previousReg = origVarReg;
 }
 
-void ASTCompiler::compoundAssign(TokenType oper,
-    UP(AssignExpr)& node, ui8 slot)
+void ASTCompiler::compoundAssign(UP(AssignExpr)& node, ui8 slot)
 {
     ui8 reg = previousReg;
     compileExpr(node->value);
 
     Opcode op;
-    switch (oper)
+    switch (node->oper.type)
     {
         case TOK_PLUS_EQ:       op = OP_ADD;            break;
         case TOK_MINUS_EQ:      op = OP_SUB;            break;
@@ -195,7 +193,7 @@ DEF(AssignExpr)
 
     if (node->oper.type != TOK_EQUAL)
     {
-        compoundAssign(node->oper.type, node, *ptr);
+        compoundAssign(node, *ptr);
         return;
     }
 
@@ -305,16 +303,48 @@ DEF(BinaryExpr)
     freeReg();
 }
 
+// Temporarily only dealing with simple identifier
+// variables; will need to extend later.
+
+void ASTCompiler::_crementExpr(UP(UnaryExpr)& node)
+{
+    if (node->expr->type != E_VAR_EXPR)
+        throw CompileError(node->oper,
+            "Invalid increment/decrement target.");
+    ui8* ptr = getVarSlot(node->expr);
+    // Temporarily assuming regular variables only.
+    if (ptr == nullptr)
+    {
+        VarExpr* temp = static_cast<VarExpr*>(node->expr.release());
+        UP(VarExpr) varUP = UP(VarExpr)(temp);
+        throw CompileError(varUP->name, "Undefined variable '"
+            + std::string(varUP->name.text) + "'.");
+    }
+    else if (getAccess(*ptr) == accessFix)
+        throw CompileError(node->oper,
+            "Cannot assign to a fixed-value variable.");
+
+    ui8 reg = previousReg;
+    code.loadReg(reg, OP_ONE);
+    reserveReg();
+    code.addOp((node->oper.type == TOK_INCR ? OP_ADD : OP_SUB),
+        *ptr, *ptr, reg);
+}
+
 DEF(UnaryExpr)
 {
+    if ((node->oper.type == TOK_INCR) || (node->oper.type == TOK_DECR))
+    {
+        _crementExpr(node);
+        return;
+    }
+    
     ui8 firstOper = previousReg;
     compileExpr(node->expr);
 
     Opcode op;
-    switch (node->oper)
+    switch (node->oper.type)
     {
-        case TOK_INCR:  op = OP_INCREMENT;  break;
-        case TOK_DECR:  op = OP_DECREMENT;  break;
         case TOK_MINUS: op = OP_NEGATE;     break;
         case TOK_BANG:  op = OP_NOT;        break;
         case TOK_TILDE: op = OP_BIT_COMP;   break;

@@ -64,14 +64,14 @@ class ASTCompiler
 
         // Expressions.
 
-        void compoundAssign(TokenType oper, UP(AssignExpr)& node,
-            ui8 slot); // Helper.
+        void compoundAssign(UP(AssignExpr)& node, ui8 slot); // Helper.
         DECL(AssignExpr);
         DECL(LogicExpr);
         DECL(CompareExpr);
         DECL(BitExpr);
         DECL(ShiftExpr);
         DECL(BinaryExpr);
+        void _crementExpr(UP(UnaryExpr)& node);
         DECL(UnaryExpr);
         DECL(CallExpr);
         DECL(IfExpr);

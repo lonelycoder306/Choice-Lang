@@ -196,10 +196,10 @@ namespace AST
 
         struct UnaryExpr : public Expr
         {
-            TokenType oper;
+            Token oper;
             ExprUP expr;
 
-            UnaryExpr(TokenType oper, ExprUP expr);
+            UnaryExpr(Token oper, ExprUP expr);
         };
 
         struct CallExpr : public Expr
