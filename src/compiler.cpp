@@ -443,10 +443,37 @@ void Compiler::product()
     }
 }
 
+void Compiler::_crementExpr(TokenType oper)
+{
+    // Temporarily assuming only regular identifier variables.
+    matchError(TOK_IDENTIFIER, "Invalid increment/decrement target.");
+    ui8* slot = getVarSlot(previousTok);
+    if (slot != nullptr)
+    {
+        bool access = getAccess(*slot);
+        if (access == accessFix)
+            throw CompileError(
+                previousTok, "Cannot modify a fixed-value variable."
+            );
+        else
+        {
+            ui8 reg = previousReg;
+            code.loadReg(reg, OP_ONE);
+            reserveReg();
+            code.addOp((oper == TOK_INCR ? OP_ADD : OP_SUB),
+                *slot, *slot, reg);
+        }
+    }
+    else
+        throw CompileError(previousTok, "Undefined variable '"
+            + std::string(previousTok.text) + "'.");
+}
+
 void Compiler::unary()
 {
-    if (consumeToks(TOK_INCR, TOK_DECR, TOK_MINUS,
-        TOK_BANG, TOK_TILDE))
+    if (consumeToks(TOK_INCR, TOK_DECR))
+        _crementExpr(previousTok.type);
+    else if (consumeToks(TOK_MINUS, TOK_BANG, TOK_TILDE))
     {
         TokenType oper = previousTok.type;
         ui8 firstOper = previousReg;

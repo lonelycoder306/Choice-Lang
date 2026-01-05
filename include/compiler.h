@@ -90,6 +90,7 @@ class Compiler
         void shift();
         void sum();
         void product();
+        void _crementExpr(TokenType oper);
         void unary();
         void exponent();
         void call();
