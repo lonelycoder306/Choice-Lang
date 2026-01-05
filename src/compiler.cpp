@@ -1,4 +1,4 @@
-#ifndef COMP_AST
+//#ifndef COMP_AST
 
 #include "chainTable.h"
 #include "../include/compiler.h"
@@ -254,6 +254,33 @@ void Compiler::expression()
     assignment();
 }
 
+void Compiler::compoundAssign(TokenType oper, ui8 slot)
+{
+    ui8 reg = previousReg;
+    expression();
+
+    Opcode op;
+    switch (oper)
+    {
+        case TOK_PLUS_EQ:       op = OP_ADD;            break;
+        case TOK_MINUS_EQ:      op = OP_SUB;            break;
+        case TOK_STAR_EQ:       op = OP_MULT;           break;
+        case TOK_SLASH_EQ:      op = OP_DIV;            break;
+        case TOK_PERCENT_EQ:    op = OP_MOD;            break;
+        case TOK_STAR_STAR_EQ:  op = OP_POWER;          break;
+
+        case TOK_AMP_EQ:        op = OP_BIT_AND;        break;
+        case TOK_BAR_EQ:        op = OP_BIT_OR;         break;
+        case TOK_UARROW_EQ:     op = OP_BIT_XOR;        break;
+        case TOK_TILDE_EQ:      op = OP_BIT_COMP;       break;
+        case TOK_LSHIFT_EQ:     op = OP_BIT_SHIFT_L;    break;
+        case TOK_RSHIFT_EQ:     op = OP_BIT_SHIFT_R;    break;
+        default: UNREACHABLE();
+    }
+
+    code.addOp(op, slot, slot, reg);
+}
+
 // For the time being, we just look for direct
 // identifier names.
 // This would need to be modified when other types
@@ -265,7 +292,7 @@ void Compiler::assignment()
     const Token& firstTok = currentTok;
     const Token& secondTok = *(it + 1);
 
-    if (secondTok.type == TOK_EQUAL)
+    if (IS_ASSIGN(secondTok.type))
     {
         if (firstTok.type != TOK_IDENTIFIER)
             throw CompileError(firstTok, "Invalid assignment target.");
@@ -280,9 +307,14 @@ void Compiler::assignment()
                 throw CompileError(
                     secondTok, "Cannot assign to a fixed-value variable."
                 );
-            ui8 value = previousReg;
-            expression(); // Does not consume the ';'.
-            code.addOp(OP_SET_VAR, *slot, value);
+            if (secondTok.type != TOK_EQUAL)
+                compoundAssign(secondTok.type, *slot);
+            else
+            {
+                ui8 value = previousReg;
+                expression(); // Does not consume the ';'.
+                code.addOp(OP_SET_VAR, *slot, value);
+            }
         }
         else
             throw CompileError(previousTok, "Undefined variable '"
@@ -548,4 +580,4 @@ ByteCode& Compiler::compile(const vT& tokens)
     return code;
 }
 
-#endif
+//#endif

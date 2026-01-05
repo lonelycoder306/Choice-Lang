@@ -96,12 +96,6 @@ enum TokenType : ui8
 
 	TOK_INCR,			// ++
 	TOK_DECR,			// --
-	TOK_PLUS_EQ,		// +=
-	TOK_MINUS_EQ,		// -=
-	TOK_STAR_EQ,		// *=
-	TOK_SLASH_EQ,		// /=
-	TOK_PERCENT_EQ,		// %=
-	TOK_STAR_STAR_EQ,	// **=
 
 	/* Boolean/comparison operators. */
 
@@ -111,6 +105,7 @@ enum TokenType : ui8
 	TOK_GT_EQ,			// >=
 	TOK_LT,				// <
 	TOK_LT_EQ,			// <=
+
 	TOK_BANG,			// !
 	TOK_AMP_AMP,		// &&
 	TOK_BAR_BAR,		// ||
@@ -123,6 +118,15 @@ enum TokenType : ui8
 	TOK_TILDE,          // ~
 	TOK_LEFT_SHIFT,		// <<
 	TOK_RIGHT_SHIFT,	// >>
+
+	/* Compound assignment operators. */
+
+	TOK_PLUS_EQ,		// +=
+	TOK_MINUS_EQ,		// -=
+	TOK_STAR_EQ,		// *=
+	TOK_SLASH_EQ,		// /=
+	TOK_PERCENT_EQ,		// %=
+	TOK_STAR_STAR_EQ,	// **=
 
 	TOK_AMP_EQ,			// &=
 	TOK_BAR_EQ,			// |=
@@ -173,3 +177,6 @@ class Token
 
 #define IS_LITERAL(type)	((TOK_NUM <= type) && (type <= TOK_NULL))
 #define IS_TYPE(type)		((TOK_INT <= type) && (type <= TOK_ANY))
+#define IS_ASSIGN(type) \
+	(((type) == TOK_EQUAL) \
+	|| (((type) >= TOK_PLUS_EQ) && ((type) <= TOK_RSHIFT_EQ)))

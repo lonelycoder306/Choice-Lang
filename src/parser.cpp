@@ -168,8 +168,9 @@ ExprUP Parser::expression()
 ExprUP Parser::assignment()
 {
     ExprUP target = logicOr();
-    if (consumeTok(TOK_EQUAL))
+    if (IS_ASSIGN(currentTok.type))
     {
+        nextTok();
         Token oper = previousTok;
         if (target->type != E_VAR_EXPR) // Temporary.
             throw CompileError(previousTok, "Invalid assignment target.");

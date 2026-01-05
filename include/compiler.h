@@ -78,6 +78,7 @@ class Compiler
         // Expressions.
 
         void expression();
+        void compoundAssign(TokenType oper, ui8 slot); // Helper.
         void assignment();
         void logicOr();
         void logicAnd();

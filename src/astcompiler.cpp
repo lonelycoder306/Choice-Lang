@@ -150,10 +150,36 @@ DEF(BlockStmt)
     previousReg = origVarReg;
 }
 
-DEF(AssignExpr)
+void ASTCompiler::compoundAssign(TokenType oper,
+    UP(AssignExpr)& node, ui8 slot)
 {
     ui8 reg = previousReg;
     compileExpr(node->value);
+
+    Opcode op;
+    switch (oper)
+    {
+        case TOK_PLUS_EQ:       op = OP_ADD;            break;
+        case TOK_MINUS_EQ:      op = OP_SUB;            break;
+        case TOK_STAR_EQ:       op = OP_MULT;           break;
+        case TOK_SLASH_EQ:      op = OP_DIV;            break;
+        case TOK_PERCENT_EQ:    op = OP_MOD;            break;
+        case TOK_STAR_STAR_EQ:  op = OP_POWER;          break;
+
+        case TOK_AMP_EQ:        op = OP_BIT_AND;        break;
+        case TOK_BAR_EQ:        op = OP_BIT_OR;         break;
+        case TOK_UARROW_EQ:     op = OP_BIT_XOR;        break;
+        case TOK_TILDE_EQ:      op = OP_BIT_COMP;       break;
+        case TOK_LSHIFT_EQ:     op = OP_BIT_SHIFT_L;    break;
+        case TOK_RSHIFT_EQ:     op = OP_BIT_SHIFT_R;    break;
+        default: UNREACHABLE();
+    }
+
+    code.addOp(op, slot, slot, reg);
+}
+
+DEF(AssignExpr)
+{
     ui8* ptr = getVarSlot(node->target);
     // Temporarily assuming regular variables only.
     if (ptr == nullptr)
@@ -166,6 +192,15 @@ DEF(AssignExpr)
     else if (getAccess(*ptr) == accessFix)
         throw CompileError(node->oper,
             "Cannot assign to a fixed-value variable.");
+
+    if (node->oper.type != TOK_EQUAL)
+    {
+        compoundAssign(node->oper.type, node, *ptr);
+        return;
+    }
+
+    ui8 reg = previousReg;
+    compileExpr(node->value);
     code.addOp(OP_SET_VAR, *ptr, reg);
 }
 
