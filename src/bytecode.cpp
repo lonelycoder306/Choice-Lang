@@ -1,9 +1,8 @@
 #include "../include/bytecode.h"
 #include "../include/object.h"
 #include "../include/opcodes.h"
-#include <cstring>
+#include <cmath>
 #include <fstream>
-#include <type_traits>
 
 ByteCode::ByteCode() :
 	block(0), pool(0) {}
@@ -58,7 +57,8 @@ void ByteCode::loadRegConst(Object& constant, ui8 reg)
 	}
 	else if (constant.type == OBJ_DEC)
 	{
-		if (IS_SMALL(constant.as.doubleVal))
+		if (IS_SMALL(constant.as.doubleVal)
+			&& (fmod(constant.as.doubleVal, 1.0) == 0.0))
 		{
 			addByte(static_cast<ui8>(constant.as.doubleVal + 2));
 			return;
