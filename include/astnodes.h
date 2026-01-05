@@ -123,6 +123,7 @@ namespace AST
             E_BINARY_EXPR,
             E_UNARY_EXPR,
             E_CALL_EXPR,
+            E_IF_EXPR,
             E_VAR_EXPR,
             E_LITERAL_EXPR
         };
@@ -207,6 +208,15 @@ namespace AST
             ExprVec args;
 
             CallExpr(ExprUP callee, ExprVec& args);
+        };
+
+        struct IfExpr : public Expr
+        {
+            ExprUP condition;
+            ExprUP trueExpr;
+            ExprUP falseExpr;
+
+            IfExpr(ExprUP condition, ExprUP trueExpr, ExprUP falseExpr);
         };
 
         struct VarExpr : public Expr

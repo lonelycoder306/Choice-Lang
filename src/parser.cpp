@@ -320,6 +320,33 @@ ExprUP Parser::exponent()
     return expr;
 }
 
+ExprUP Parser::ifExpr()
+{
+    matchError(TOK_LEFT_PAREN, "Expect '(' before condition.");
+    ExprUP condition = expression();
+    matchError(TOK_RIGHT_PAREN, "Expect ')' after condition.");
+
+    matchError(TOK_LEFT_BRACE, "Expect '{' before conditional expression.");
+    ExprUP trueBranch = expression();
+    matchError(TOK_RIGHT_BRACE, "Expect '}' after conditional expression.");
+
+    ExprUP falseBranch = nullptr; // To avoid warnings.
+    if (consumeTok(TOK_ELIF))
+        falseBranch = ifExpr();
+    else if (consumeTok(TOK_ELSE))
+    {
+        matchError(TOK_LEFT_BRACE, "Expect '{' before conditional expression.");
+        falseBranch = expression();
+        matchError(TOK_RIGHT_BRACE, "Expect '}' after conditional expression.");
+    }
+    else
+        throw CompileError(currentTok,
+            "A conditional expression must have a false-case branch.");
+
+    return ExprUP(std::make_unique<IfExpr>(std::move(condition),
+        std::move(trueBranch), std::move(falseBranch)));
+}
+
 ExprUP Parser::primary()
 {
     nextTok();
@@ -337,6 +364,9 @@ ExprUP Parser::primary()
         matchError(TOK_RIGHT_PAREN, "Expect ')' after grouped expression.");
         return expr;
     }
+
+    else if (type == TOK_IF)
+        return ifExpr();
     
     return nullptr; // Temporary.
 }

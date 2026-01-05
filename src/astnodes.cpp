@@ -77,6 +77,11 @@ CallExpr::CallExpr(ExprUP callee, ExprVec& args) :
     Expr(E_CALL_EXPR),
     callee(std::move(callee)), args(std::move(args)) {}
 
+IfExpr::IfExpr(ExprUP condition, ExprUP trueExpr, ExprUP falseExpr) :
+    Expr(E_IF_EXPR),
+    condition(std::move(condition)), trueExpr(std::move(trueExpr)),
+    falseExpr(std::move(falseExpr)) {}
+
 VarExpr::VarExpr(Token& name) :
     Expr(E_VAR_EXPR),
     name(name) {}

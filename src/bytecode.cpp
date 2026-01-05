@@ -85,9 +85,12 @@ void ByteCode::loadRegConst(Object& constant, ui8 reg)
 	}
 }
 
-ui64 ByteCode::addJump(Opcode op, ui8 reg)
+ui64 ByteCode::addJump(Opcode op, i16 reg)
 {
-	addBytes(static_cast<ui8>(op), reg);
+	if (reg == -1)
+		addByte(static_cast<ui8>(op));
+	else
+		addBytes(static_cast<ui8>(op), static_cast<ui8>(reg));
 	ui64 offset = block.size();
 	block.push_back(static_cast<ui8>(0));
 	block.push_back(static_cast<ui8>(0));

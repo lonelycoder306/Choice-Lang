@@ -193,8 +193,9 @@ void Compiler::ifStmt()
     matchError(TOK_RIGHT_PAREN, "Expect ')' after condition.");
 
     ui64 falseJump = code.addJump(OP_JUMP_FALSE, reg);
+    freeReg();
     statement();
-    ui64 trueJump = code.addJump(OP_JUMP_TRUE, reg);
+    ui64 trueJump = code.addJump(OP_JUMP);
     code.patchJump(falseJump);
     
     if (consumeTok(TOK_ELIF))
@@ -202,7 +203,6 @@ void Compiler::ifStmt()
     else if (consumeTok(TOK_ELSE))
         statement();
     code.patchJump(trueJump);
-    freeReg();
 }
 
 void Compiler::blockStmt()
@@ -414,6 +414,39 @@ void Compiler::exponent()
     compileDescent(&Compiler::primary, TOK_STAR_STAR, OP_POWER);
 }
 
+void Compiler::ifExpr()
+{
+    ui8 reg = previousReg;
+    matchError(TOK_LEFT_PAREN, "Expect '(' before condition.");
+    expression();
+    matchError(TOK_RIGHT_PAREN, "Expect ')' after condition.");
+    ui64 falseJump = code.addJump(OP_JUMP_FALSE, reg);
+    freeReg();
+
+    matchError(TOK_LEFT_BRACE, "Expect '{' before conditional expression.");
+    ui8 current = previousReg;
+    expression();
+    matchError(TOK_RIGHT_BRACE, "Expect '}' after conditional expression.");
+    ui64 trueJump = code.addJump(OP_JUMP);
+    code.patchJump(falseJump);
+
+    previousReg = current;
+    
+    if (consumeTok(TOK_ELIF))
+        ifExpr();
+    else if (consumeTok(TOK_ELSE))
+    {
+        matchError(TOK_LEFT_BRACE, "Expect '{' before conditional expression.");
+        expression();
+        matchError(TOK_RIGHT_BRACE, "Expect '}' after conditional expression.");
+    }
+    else
+        throw CompileError(currentTok,
+            "A conditional expression must have a false-case branch.");
+
+    code.patchJump(trueJump);
+}
+
 void Compiler::primary()
 {    
     if (consumeToks(TOK_NUM, TOK_NUM_DEC, TOK_STR_LIT))
@@ -454,6 +487,9 @@ void Compiler::primary()
             reserveReg();
         }
     }
+
+    else if (consumeTok(TOK_IF))
+        ifExpr();
 }
 
 ByteCode& Compiler::compile(const vT& tokens)
@@ -470,6 +506,7 @@ ByteCode& Compiler::compile(const vT& tokens)
     catch (CompileError& error)
     {
         error.report();
+        code.clear();
     }
 
     return code;

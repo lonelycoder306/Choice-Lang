@@ -31,7 +31,9 @@ class ByteCode
 
         void loadReg(ui8 reg, ui8 op);
         void loadRegConst(Object& constant, ui8 reg);
-        ui64 addJump(Opcode op, ui8 reg);
+        // i16 to allow negative values while still
+        // fitting all register values.
+        ui64 addJump(Opcode op, i16 reg = -1);
         void patchJump(ui64 offset);
 
         void cacheStream(std::ofstream& os) const;

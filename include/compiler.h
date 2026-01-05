@@ -92,6 +92,7 @@ class Compiler
         void unary();
         void exponent();
         void call();
+        void ifExpr();
         void primary();
     
     public:

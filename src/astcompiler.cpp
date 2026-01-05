@@ -108,13 +108,13 @@ DEF(IfStmt)
     ui8 reg = previousReg;
     compileExpr(node->condition);
     ui64 falseJump = code.addJump(OP_JUMP_FALSE, reg);
+    freeReg();
     compileStmt(node->trueBranch);
-    ui64 trueJump = code.addJump(OP_JUMP_TRUE, reg);
+    ui64 trueJump = code.addJump(OP_JUMP);
     code.patchJump(falseJump);
     if (node->falseBranch != nullptr)
         compileStmt(node->falseBranch);
     code.patchJump(trueJump);
-    freeReg();
 }
 
 DEF(ReturnStmt) { (void) node; }
@@ -282,6 +282,23 @@ DEF(UnaryExpr)
 
 DEF(CallExpr) { (void) node; }
 
+DEF(IfExpr)
+{
+    ui8 reg = previousReg;
+    compileExpr(node->condition);
+    ui64 falseJump = code.addJump(OP_JUMP_FALSE, reg);
+    freeReg();
+
+    ui8 current = previousReg;
+    compileExpr(node->trueExpr);
+    ui64 trueJump = code.addJump(OP_JUMP);
+    code.patchJump(falseJump);
+
+    previousReg = current;
+    compileExpr(node->falseExpr);
+    code.patchJump(trueJump);
+}
+
 DEF(VarExpr)
 {
     ui8* ptr = getVarSlot(node->name);
@@ -290,7 +307,6 @@ DEF(VarExpr)
         throw CompileError(node->name, "Undefined variable '"
             + std::string(node->name.text) + "'.");
     }
-    // code.addOp(OP_MOVE_R, previousReg, reg);
     code.addOp(OP_GET_VAR, previousReg, *ptr);
     reserveReg();
 }
@@ -349,6 +365,7 @@ void ASTCompiler::compileExpr(ExprUP& node)
         case E_BINARY_EXPR:     COMPILE(BinaryExpr, node);  break;
         case E_UNARY_EXPR:      COMPILE(UnaryExpr, node);   break;
         case E_CALL_EXPR:       COMPILE(CallExpr, node);    break;
+        case E_IF_EXPR:         COMPILE(IfExpr, node);      break;
         case E_VAR_EXPR:        COMPILE(VarExpr, node);     break;
         case E_LITERAL_EXPR:    COMPILE(LiteralExpr, node); break;
     }

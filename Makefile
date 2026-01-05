@@ -10,7 +10,7 @@ DEFINES = -DFMT_HEADER_ONLY
 # RELEASE_FLAGS = -g -O2 -DNDEBUG
 REGULAR_FLAGS = -g -O2
 WARNINGS = -Wall -Wextra \
-			-Wno-unused-parameter -Wno-sign-compare -Wno-maybe-uninitialized\
+			-Wno-unused-parameter -Wno-sign-compare -Wno-maybe-uninitialized \
 			-Werror -pedantic
 CXXFLAGS = $(INCLUDES) $(CXX_STANDARD) $(REGULAR_FLAGS) $(WARNINGS) $(DEFINES)
 AST = -DCOMP_AST

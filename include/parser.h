@@ -57,6 +57,7 @@ class Parser
         ExprUP unary();
         ExprUP exponent();
         ExprUP call();
+        ExprUP ifExpr();
         ExprUP primary();
 
         // Nothing for grouping () yet.

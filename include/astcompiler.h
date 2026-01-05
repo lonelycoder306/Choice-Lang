@@ -72,6 +72,7 @@ class ASTCompiler
         DECL(BinaryExpr);
         DECL(UnaryExpr);
         DECL(CallExpr);
+        DECL(IfExpr);
         DECL(VarExpr);
         DECL(LiteralExpr);
 
