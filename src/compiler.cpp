@@ -1,4 +1,4 @@
-//#ifndef COMP_AST
+#ifndef COMP_AST
 
 #include "chainTable.h"
 #include "../include/compiler.h"
@@ -548,4 +548,4 @@ ByteCode& Compiler::compile(const vT& tokens)
     return code;
 }
 
-//#endif
+#endif
