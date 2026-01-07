@@ -183,7 +183,7 @@ DEF(MatchStmt)
 
     for (int i = 0; i < caseCount; i++)
         code.patchJump(jumps[i]);
-    freeReg();
+    freeReg(); // Remove the match value.
 }
 
 DEF(RepeatStmt)
