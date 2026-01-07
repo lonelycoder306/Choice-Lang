@@ -91,8 +91,7 @@ static std::string_view opNames[] = {
 
 	"OP_LIST", "OP_TABLE",
 
-	"OP_EQUAL", "OP_GT", "OP_LT", "OP_NOT", "OP_AND",
-	"OP_OR",
+	"OP_EQUAL", "OP_GT", "OP_LT", "OP_NOT",
 
     "OP_BIT_AND", "OP_BIT_OR", "OP_BIT_COMP", "OP_BIT_XOR",
     "OP_BIT_SHIFT_R", "OP_BIT_SHIFT_L",
