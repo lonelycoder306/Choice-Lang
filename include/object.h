@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <fstream>
 #include <memory>
-#include <string.h>
+#include <string>
 #include <variant>
 
 enum ObjType
