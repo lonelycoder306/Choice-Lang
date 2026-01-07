@@ -23,7 +23,8 @@ class TokCompVarsWrapper
 
 Compiler::Compiler() :
     previousReg(0), scope(0), varScopes(1),
-    varsWrapper(new TokCompVarsWrapper) {}
+    varsWrapper(new TokCompVarsWrapper),
+    inMatch(false), fall(false), end(false) {}
 
 Compiler::~Compiler()
 {
@@ -194,10 +195,31 @@ void Compiler::statement()
         ifStmt();
     else if (consumeTok(TOK_WHILE))
         whileStmt();
+    else if (consumeTok(TOK_MATCH))
+        matchStmt();
     else if (consumeTok(TOK_REPEAT))
         repeatStmt();
     else if (consumeTok(TOK_LEFT_BRACE))
         blockStmt();
+    else if (consumeTok(TOK_FALL))
+    {
+        if (!inMatch)
+            throw CompileError(previousTok, "Invalid instruction 'fallthrough'" \
+                " outside of match-is structure.");
+        matchError(TOK_SEMICOLON, "Expect ';' after 'fallthrough'.");
+        if (!checkTok(TOK_IS) && !checkTok(TOK_RIGHT_BRACE))
+            throw CompileError(currentTok,
+                "Cannot have a statement following a 'fallthrough' instruction.");
+        fall = true;
+    }
+    else if (consumeTok(TOK_END))
+    {
+        if (!inMatch)
+            throw CompileError(previousTok,
+                "Invalid instruction 'end outside of match-is structure.");
+        matchError(TOK_SEMICOLON, "Expect ';' after 'end'.");
+        end = true;
+    }
     else
         exprStmt();
 }
@@ -236,6 +258,96 @@ void Compiler::whileStmt()
     statement();
     code.addLoop(loopStart);
     code.patchJump(falseJump);
+}
+
+ui64 Compiler::matchCaseHelper(const ui8 matchReg, ui64& fallJump,
+    ui64& emptyJump)
+{
+    ui64 retJump = 0;
+    Token errorToken = currentTok;
+    if (!IS_LITERAL(errorToken.type))
+        throw CompileError(errorToken,
+            "Case value must be a literal.");
+
+    ui8 caseReg = previousReg;
+    primary(); // Compile the literal.
+    code.addOp(OP_EQUAL, caseReg, matchReg, caseReg);
+    ui64 falseJump = code.addJump(OP_JUMP_FALSE, caseReg);
+    freeReg();
+    matchError(TOK_COLON, "Expect ':' before case body.");
+
+    if (fallJump != 0) // We skip condition checking during fallthrough.
+        code.patchJump(fallJump);
+    if (emptyJump != 0)
+    {
+        code.patchJump(emptyJump);
+        emptyJump = 0;
+    }
+
+    bool empty = false;
+    if (!checkTok(TOK_IS) && !checkTok(TOK_RIGHT_BRACE))
+        statement();
+    else
+        empty = true;
+
+    if (fall || (fallJump != 0))
+        fallJump = code.addJump(OP_JUMP);
+    else if (empty)
+        emptyJump = code.addJump(OP_JUMP);
+    else
+        retJump = code.addJump(OP_JUMP);
+
+    code.patchJump(falseJump);
+    return retJump;
+}
+
+void Compiler::matchStmt()
+{
+    inMatch = true;
+    
+    matchError(TOK_LEFT_PAREN, "Expect '(' before match value.");
+    ui8 matchReg = previousReg;
+    expression();
+    matchError(TOK_RIGHT_PAREN, "Expect ')' after match value.");
+    matchError(TOK_LEFT_BRACE, "Expect '{' before match cases.");
+
+    int caseCount = 0;
+    ui64 fallJump = 0; // Invalid jump offset value.
+    ui64 emptyJump = 0;
+    std::vector<ui64> jumps;
+
+    while (!checkTok(TOK_RIGHT_BRACE) && !checkTok(TOK_EOF))
+    {
+        if (caseCount == MATCH_CASES_MAX)
+            throw CompileError(currentTok,
+                "Too many cases in match-is structure.");
+        
+        matchError(TOK_IS, "Expect 'is' before case value.");
+        bool defaultCase = false;
+
+        ui64 retJump = 0;
+        if (consumeTok(TOK_QMARK))
+        {
+            defaultCase = true;
+            statement();
+        }
+        else
+            retJump = matchCaseHelper(matchReg, fallJump, emptyJump);
+        if (retJump != 0)
+            jumps.push_back(retJump);
+
+        if (defaultCase)
+        {
+            if (consumeTok(TOK_IS))
+                throw CompileError(previousTok,
+                    "Cannot have another case after the default case.");
+            else
+                break;
+        }
+    }
+
+    matchError(TOK_RIGHT_BRACE, "Expect '}' after match-is structure.");
+    freeReg(); // Remove the match value.
 }
 
 void Compiler::repeatStmt()

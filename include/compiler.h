@@ -26,6 +26,7 @@ class Compiler
         ui8 scope; // Our current lexical scope depth.
         std::vector<std::vector<std::string>> varScopes;
         TokCompVarsWrapper* varsWrapper;
+        bool inMatch, fall, end;
 
         // For registers.
         // Defined here for increased likelihood of inlining.
@@ -71,6 +72,9 @@ class Compiler
         void statement();
         void ifStmt();
         void whileStmt();
+        ui64 matchCaseHelper(const ui8 matchReg, ui64& fallJump,
+            ui64& emptyJump); // For individual cases.
+        void matchStmt();
         void repeatStmt();
         void returnStmt();
         void blockStmt();
