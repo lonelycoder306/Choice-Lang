@@ -20,6 +20,7 @@
 #endif
 
 #if defined(__cpp_lib_print) && defined(__cpp_lib_format)
+	#include <format>
 	#include <print>
 	#define FORMAT_PRINT	std::print
 	#define FORMAT_STR		std::format
