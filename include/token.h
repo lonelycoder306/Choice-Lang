@@ -79,6 +79,7 @@ enum TokenType : ui8
 
 	TOK_AND,			// and
 	TOK_OR,				// or
+	TOK_NOT,			// not
 	TOK_RETURN,			// return
 	TOK_NEW,			// new
 	TOK_DEF,			// def

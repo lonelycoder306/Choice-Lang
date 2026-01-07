@@ -525,7 +525,7 @@ void Compiler::unary()
 {
     if (consumeToks(TOK_INCR, TOK_DECR))
         _crementExpr(previousTok.type, false);
-    else if (consumeToks(TOK_MINUS, TOK_BANG, TOK_TILDE))
+    else if (consumeToks(TOK_MINUS, TOK_BANG, TOK_NOT, TOK_TILDE))
     {
         TokenType oper = previousTok.type;
         ui8 firstOper = previousReg;
@@ -535,7 +535,8 @@ void Compiler::unary()
         switch (oper)
         {
             case TOK_MINUS: op = OP_NEGATE;     break;
-            case TOK_BANG:  op = OP_NOT;        break;
+            case TOK_BANG:
+            case TOK_NOT:   op = OP_NOT;        break;
             case TOK_TILDE: op = OP_BIT_COMP;   break;
             default: UNREACHABLE();
         }

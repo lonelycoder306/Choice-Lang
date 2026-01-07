@@ -428,7 +428,8 @@ DEF(UnaryExpr)
     switch (node->oper.type)
     {
         case TOK_MINUS: op = OP_NEGATE;     break;
-        case TOK_BANG:  op = OP_NOT;        break;
+        case TOK_BANG:
+        case TOK_NOT:   op = OP_NOT;        break;
         case TOK_TILDE: op = OP_BIT_COMP;   break;
         default: UNREACHABLE();
     }

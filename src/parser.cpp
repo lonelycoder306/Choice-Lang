@@ -415,7 +415,7 @@ ExprUP Parser::product()
 ExprUP Parser::unary()
 {    
     if (consumeToks(TOK_INCR, TOK_DECR, TOK_MINUS,
-        TOK_BANG, TOK_TILDE))
+        TOK_BANG, TOK_NOT, TOK_TILDE))
     {
         Token oper = previousTok;
         return ExprUP(std::make_unique<UnaryExpr>(oper, unary(), false));
