@@ -145,9 +145,9 @@ DEF(MatchStmt)
 
     for (MatchStmt::matchCase& checkCase : node->cases)
     {
-        ui8 caseReg = previousReg;
         if (checkCase.value != nullptr)
         {
+            ui8 caseReg = previousReg;
             compileExpr(checkCase.value);
             code.addOp(OP_EQUAL, caseReg, matchReg, caseReg);
             ui64 falseJump = code.addJump(OP_JUMP_FALSE, caseReg);
