@@ -357,7 +357,7 @@ void Compiler::logicOr()
     ui8 reg = previousReg;
     logicAnd();
 
-    while (consumeTok(TOK_BAR_BAR))
+    while (consumeToks(TOK_BAR_BAR, TOK_OR))
     {
         ui64 trueJump = code.addJump(OP_JUMP_TRUE, reg);
         previousReg = reg;
@@ -371,7 +371,7 @@ void Compiler::logicAnd()
     ui8 reg = previousReg;
     equality();
 
-    while (consumeTok(TOK_AMP_AMP))
+    while (consumeToks(TOK_AMP_AMP, TOK_AND))
     {
         ui64 falseJump = code.addJump(OP_JUMP_FALSE, reg);
         previousReg = reg;

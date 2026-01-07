@@ -285,7 +285,7 @@ ExprUP Parser::assignment()
 ExprUP Parser::logicOr()
 {
     ExprUP expr = logicAnd();
-    while (consumeTok(TOK_BAR_BAR))
+    while (consumeToks(TOK_BAR_BAR, TOK_OR))
     {
         TokenType oper = previousTok.type;
         expr = std::make_unique<LogicExpr>(std::move(expr), oper,
@@ -298,7 +298,7 @@ ExprUP Parser::logicOr()
 ExprUP Parser::logicAnd()
 {
     ExprUP expr = equality();
-    while (consumeTok(TOK_AMP_AMP))
+    while (consumeToks(TOK_AMP_AMP, TOK_AND))
     {
         TokenType oper = previousTok.type;
         expr = std::make_unique<LogicExpr>(std::move(expr), oper,

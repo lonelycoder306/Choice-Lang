@@ -252,7 +252,7 @@ DEF(AssignExpr)
 
 DEF(LogicExpr)
 {
-    if (node->oper == TOK_AMP_AMP) // &&
+    if ((node->oper == TOK_AMP_AMP) || (node->oper == TOK_AND)) // &&, and
     {
         ui8 reg = previousReg;
         compileExpr(node->left);
@@ -261,7 +261,7 @@ DEF(LogicExpr)
         compileExpr(node->right);
         code.patchJump(falseJump);
     }
-    else if (node->oper == TOK_BAR_BAR) // ||
+    else if ((node->oper == TOK_BAR_BAR) || (node->oper == TOK_OR)) // ||, or
     {
         ui8 reg = previousReg;
         compileExpr(node->left);
