@@ -372,12 +372,10 @@ void ASTCompiler::_crementExpr(UP(UnaryExpr)& node)
         throw CompileError(node->oper,
             "Cannot modify a fixed-value variable.");
 
-    ui8 reg = previousReg;
-    code.loadReg(reg, OP_ONE);
+    code.addOp(node->oper.type == TOK_INCR ? OP_INCREMENT : OP_DECREMENT,
+        *ptr, *ptr);
+    code.addOp(OP_GET_VAR, previousReg, *ptr);
     reserveReg();
-    code.addOp((node->oper.type == TOK_INCR ? OP_ADD : OP_SUB),
-        *ptr, *ptr, reg);
-    code.addOp(OP_GET_VAR, reg, *ptr);
 }
 
 DEF(UnaryExpr)

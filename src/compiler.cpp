@@ -486,12 +486,10 @@ void Compiler::_crementExpr(TokenType oper)
             );
         else
         {
-            ui8 reg = previousReg;
-            code.loadReg(reg, OP_ONE);
+            code.addOp(oper == TOK_INCR ? OP_INCREMENT : OP_DECREMENT,
+                *slot, *slot);
+            code.addOp(OP_GET_VAR, previousReg, *slot);
             reserveReg();
-            code.addOp((oper == TOK_INCR ? OP_ADD : OP_SUB),
-                *slot, *slot, reg);
-            code.addOp(OP_GET_VAR, reg, *slot);
         }
     }
     else
@@ -512,8 +510,6 @@ void Compiler::unary()
         Opcode op;
         switch (oper)
         {
-            case TOK_INCR:  op = OP_INCREMENT;  break;
-            case TOK_DECR:  op = OP_DECREMENT;  break;
             case TOK_MINUS: op = OP_NEGATE;     break;
             case TOK_BANG:  op = OP_NOT;        break;
             case TOK_TILDE: op = OP_BIT_COMP;   break;
