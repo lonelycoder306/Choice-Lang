@@ -203,7 +203,7 @@ static void runFile(const char* fileName, ArgvOption option = EXECUTE)
 	#if defined(TIME_RUN) || defined(TIME_TOTAL)
 		auto end = high_resolution_clock::now();
 		auto time = duration_cast<microseconds>(end - begin);
-		FORMAT_PRINT("Time: {}\n",
+		FORMAT_PRINT("Time: {:.6f}\n",
 			static_cast<long double>(time.count()) / 1000000);
 	#endif
 }
