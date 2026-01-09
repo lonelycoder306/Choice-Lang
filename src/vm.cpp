@@ -200,9 +200,9 @@ Object VM::unaryOper(Opcode op)
                     obj.type
                 );
             if (IS_INT(obj))
-                return AS_INT(obj) + i64(1 * (op == OP_INCREMENT ? 1 : -1));
+                return AS_INT(obj) + i64(op == OP_INCREMENT ? 1 : -1);
             else
-                return AS_DEC(obj) + double(1 * (op == OP_INCREMENT ? 1 : -1));
+                return AS_DEC(obj) + double(op == OP_INCREMENT ? 1 : -1);
         }
         case OP_NEGATE:
         {
