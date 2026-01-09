@@ -90,6 +90,16 @@ void VM::loadOper(const vObj& pool)
     }
 }
 
+inline Object VM::concatStrings(const Object& str1, const Object& str2)
+{
+    HeapObj* temp1 = AS_HEAP_PTR(str1);
+    HeapObj* temp2 = AS_HEAP_PTR(str2);
+
+    std::string concat = AS_STRING(temp1).str + AS_STRING(temp2).str;
+    HeapObj* newStr = new String(concat);
+    return newStr;
+}
+
 Object VM::arithOper(Opcode oper)
 {
     ui8 op1 = readByte();
@@ -97,6 +107,9 @@ Object VM::arithOper(Opcode oper)
 
     Object a = registers[op1];
     Object b = registers[op2];
+
+    if (IS_STRING(&a) && IS_STRING(&b))
+        return concatStrings(a, b);
 
     if (IS_NUM(a) && IS_NUM(b))
     {

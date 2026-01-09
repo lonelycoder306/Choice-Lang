@@ -28,6 +28,8 @@ class VM
         inline ui32 readLong();
         inline bool isTruthy(const Object& obj);
         void loadOper(const vObj& pool);
+        inline Object concatStrings(const Object& str1,
+            const Object& str2);
         Object arithOper(Opcode oper);
         inline Object compareOper(Opcode oper);
         Object bitOper(Opcode oper);
