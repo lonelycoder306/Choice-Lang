@@ -39,8 +39,6 @@ class VM
         void printRegister();
         #endif
 
-        // Variables.
-
         void executeOp(Opcode op, const vObj& pool);
     
     public:

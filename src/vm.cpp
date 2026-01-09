@@ -102,11 +102,8 @@ inline Object VM::concatStrings(const Object& str1, const Object& str2)
 
 Object VM::arithOper(Opcode oper)
 {
-    ui8 op1 = readByte();
-    ui8 op2 = readByte();
-
-    Object a = registers[op1];
-    Object b = registers[op2];
+    Object a = registers[readByte()];
+    Object b = registers[readByte()];
 
     if (IS_STRING(&a) && IS_STRING(&b))
         return concatStrings(a, b);
@@ -155,8 +152,8 @@ Object VM::arithOper(Opcode oper)
 
 inline Object VM::compareOper(Opcode op)
 {
-    const Object a = registers[readByte()];
-    const Object b = registers[readByte()];
+    const Object& a = registers[readByte()];
+    const Object& b = registers[readByte()];
     
     switch (op)
     {
