@@ -117,11 +117,16 @@ DEF(IfStmt)
     ui64 falseJump = code.addJump(OP_JUMP_FALSE, reg);
     freeReg();
     compileStmt(node->trueBranch);
-    ui64 trueJump = code.addJump(OP_JUMP);
-    code.patchJump(falseJump);
     if (node->falseBranch != nullptr)
-        compileStmt(node->falseBranch);
-    code.patchJump(trueJump);
+    {
+        ui64 trueJump = code.addJump(OP_JUMP);
+        code.patchJump(falseJump);
+        if (node->falseBranch != nullptr)
+            compileStmt(node->falseBranch);
+        code.patchJump(trueJump);
+    }
+    else
+        code.patchJump(falseJump);
 }
 
 DEF(WhileStmt)

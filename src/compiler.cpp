@@ -245,14 +245,20 @@ void Compiler::ifStmt()
     ui64 falseJump = code.addJump(OP_JUMP_FALSE, reg);
     freeReg();
     statement();
-    ui64 trueJump = code.addJump(OP_JUMP);
-    code.patchJump(falseJump);
-    
-    if (consumeTok(TOK_ELIF))
-        ifStmt();
-    else if (consumeTok(TOK_ELSE))
-        statement();
-    code.patchJump(trueJump);
+
+    if (consumeToks(TOK_ELIF, TOK_ELSE))
+    {
+        ui64 trueJump = code.addJump(OP_JUMP);
+        code.patchJump(falseJump);
+        
+        if (previousTok.type == TOK_ELIF)
+            ifStmt();
+        else if (previousTok.type == TOK_ELSE)
+            statement();
+        code.patchJump(trueJump);
+    }
+    else
+        code.patchJump(falseJump);
 }
 
 void Compiler::whileStmt()
