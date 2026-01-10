@@ -33,6 +33,8 @@ namespace AST
             S_MATCH_STMT,
             S_REPEAT_STMT,
             S_RETURN_STMT,
+            S_BREAK_STMT,
+            S_CONT_STMT,
             S_END_STMT,
             S_EXPR_STMT,
             S_BLOCK_STMT
@@ -122,6 +124,16 @@ namespace AST
             ExprUP expr;
 
             ReturnStmt(Token& keyword, ExprUP expr);
+        };
+
+        struct BreakStmt : public Stmt
+        {
+            BreakStmt();
+        };
+
+        struct ContinueStmt : public Stmt
+        {
+            ContinueStmt();
         };
 
         struct EndStmt : public Stmt

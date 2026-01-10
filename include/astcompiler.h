@@ -34,6 +34,8 @@ class ASTCompiler
         std::vector<std::vector<std::string>> varScopes;
         ASTCompVarsWrapper* varsWrapper;
         std::vector<ui64>* endJumps;
+        std::vector<ui64>* breakJumps;
+        std::vector<ui64>* continueJumps;
 
         // Variables.
 
@@ -63,6 +65,8 @@ class ASTCompiler
         DECL(MatchStmt);
         DECL(RepeatStmt);
         DECL(ReturnStmt);
+        DECL(BreakStmt);
+        DECL(ContinueStmt);
         DECL(EndStmt);
         DECL(ExprStmt);
         DECL(BlockStmt);

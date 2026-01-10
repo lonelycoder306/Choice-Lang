@@ -118,6 +118,16 @@ StmtUP Parser::statement()
         return repeatStmt();
     else if (consumeTok(TOK_LEFT_BRACE))
         return blockStmt();
+    else if (consumeTok(TOK_BREAK)) // Add error handling.
+    {
+        matchError(TOK_SEMICOLON, "Expect ';' after 'break'.");
+        return std::make_unique<BreakStmt>();
+    }
+    else if (consumeTok(TOK_CONT))
+    {
+        matchError(TOK_SEMICOLON, "Expect ';' after 'continue'.");
+        return std::make_unique<ContinueStmt>();
+    }
     else if (consumeTok(TOK_FALL))
     {
         if (!inMatch)

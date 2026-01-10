@@ -23,7 +23,8 @@ class ASTCompVarsWrapper
 ASTCompiler::ASTCompiler() :
     previousReg(0), scope(0), varScopes(1), // For global scope.
     varsWrapper(new ASTCompVarsWrapper),
-    endJumps(nullptr) {}
+    endJumps(nullptr), breakJumps(nullptr),
+    continueJumps(nullptr) {}
 
 ASTCompiler::~ASTCompiler()
 {
@@ -127,12 +128,31 @@ DEF(WhileStmt)
 {
     ui8 reg = previousReg;
     ui64 loopStart = code.getLoopStart();
+
+    std::vector<ui64> breaks;
+    auto prevBreaks = breakJumps;
+    breakJumps = &breaks;
+
+    std::vector<ui64> continues;
+    auto prevContinues = continueJumps;
+    continueJumps = &continues;
+
     compileExpr(node->condition);
     ui64 falseJump = code.addJump(OP_JUMP_FALSE, reg);
     freeReg();
     compileStmt(node->body);
+
+    for (ui64 jump : continues)
+        code.patchJump(jump);
+
     code.addLoop(loopStart);
     code.patchJump(falseJump);
+
+    for (ui64 jump : breaks)
+        code.patchJump(jump);
+
+    breakJumps = prevBreaks;
+    continueJumps = prevContinues;
 }
 
 DEF(MatchStmt)
@@ -205,6 +225,16 @@ DEF(RepeatStmt)
 }
 
 DEF(ReturnStmt) { (void) node; }
+
+DEF(BreakStmt)
+{
+    this->breakJumps->push_back(code.addJump(OP_JUMP));
+}
+
+DEF(ContinueStmt)
+{
+    this->continueJumps->push_back(code.addJump(OP_JUMP));
+}
 
 DEF(EndStmt)
 {
@@ -553,17 +583,19 @@ void ASTCompiler::compileStmt(StmtUP& node)
     
     switch (node->type)
     {
-        case S_VAR_DECL:    COMPILE(VarDecl, node);     break;
-        case S_FUN_DECL:    COMPILE(FunDecl, node);     break;
-        case S_CLASS_DECL:  COMPILE(ClassDecl, node);   break;
-        case S_IF_STMT:     COMPILE(IfStmt, node);      break;
-        case S_WHILE_STMT:  COMPILE(WhileStmt, node);   break;
-        case S_MATCH_STMT:  COMPILE(MatchStmt, node);   break;
-        case S_REPEAT_STMT: COMPILE(RepeatStmt, node);  break;
-        case S_RETURN_STMT: COMPILE(ReturnStmt, node);  break;
-        case S_END_STMT:    COMPILE(EndStmt, node);     break;
-        case S_EXPR_STMT:   COMPILE(ExprStmt, node);    break;
-        case S_BLOCK_STMT:  COMPILE(BlockStmt, node);   break;
+        case S_VAR_DECL:    COMPILE(VarDecl, node);         break;
+        case S_FUN_DECL:    COMPILE(FunDecl, node);         break;
+        case S_CLASS_DECL:  COMPILE(ClassDecl, node);       break;
+        case S_IF_STMT:     COMPILE(IfStmt, node);          break;
+        case S_WHILE_STMT:  COMPILE(WhileStmt, node);       break;
+        case S_MATCH_STMT:  COMPILE(MatchStmt, node);       break;
+        case S_REPEAT_STMT: COMPILE(RepeatStmt, node);      break;
+        case S_RETURN_STMT: COMPILE(ReturnStmt, node);      break;
+        case S_BREAK_STMT:  COMPILE(BreakStmt, node);       break;
+        case S_CONT_STMT:   COMPILE(ContinueStmt, node);    break;
+        case S_END_STMT:    COMPILE(EndStmt, node);         break;
+        case S_EXPR_STMT:   COMPILE(ExprStmt, node);        break;
+        case S_BLOCK_STMT:  COMPILE(BlockStmt, node);       break;
     }
 }
 

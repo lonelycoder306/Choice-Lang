@@ -27,6 +27,8 @@ class Compiler
         std::vector<std::vector<std::string>> varScopes;
         TokCompVarsWrapper* varsWrapper;
         std::vector<ui64>* endJumps;
+        std::vector<ui64>* breakJumps;
+        std::vector<ui64>* continueJumps;
         bool inMatch, fall;
 
         // For registers.

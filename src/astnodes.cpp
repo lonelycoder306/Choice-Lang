@@ -45,6 +45,12 @@ ReturnStmt::ReturnStmt(Token& keyword, ExprUP expr) :
     Stmt(S_RETURN_STMT),
     keyword(keyword), expr(std::move(expr)) {}
 
+BreakStmt::BreakStmt() :
+    Stmt(S_BREAK_STMT) {}
+
+ContinueStmt::ContinueStmt() :
+    Stmt (S_CONT_STMT) {}
+
 EndStmt::EndStmt() :
     Stmt(S_END_STMT) {}
 

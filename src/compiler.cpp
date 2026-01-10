@@ -24,7 +24,8 @@ class TokCompVarsWrapper
 Compiler::Compiler() :
     previousReg(0), scope(0), varScopes(1),
     varsWrapper(new TokCompVarsWrapper),
-    inMatch(false), fall(false), endJumps(nullptr) {}
+    inMatch(false), fall(false), endJumps(nullptr),
+    breakJumps(nullptr), continueJumps(nullptr) {}
 
 Compiler::~Compiler()
 {
@@ -201,6 +202,16 @@ void Compiler::statement()
         repeatStmt();
     else if (consumeTok(TOK_LEFT_BRACE))
         blockStmt();
+    else if (consumeTok(TOK_BREAK))
+    {
+        matchError(TOK_SEMICOLON, "Expect ';' after 'break'.");
+        this->breakJumps->push_back(code.addJump(OP_JUMP));
+    }
+    else if (consumeTok(TOK_CONT))
+    {
+        matchError(TOK_SEMICOLON, "Expect ';' after 'continue'.");
+        this->continueJumps->push_back(code.addJump(OP_JUMP));
+    }
     else if (consumeTok(TOK_FALL))
     {
         if (!inMatch)
@@ -247,17 +258,35 @@ void Compiler::ifStmt()
 void Compiler::whileStmt()
 {
     matchError(TOK_LEFT_PAREN, "Expect '(' after 'while'.");
-    // Allow a declaration first?
     ui8 reg = previousReg;
     ui64 loopStart = code.getLoopStart();
+
+    std::vector<ui64> breaks;
+    auto prevBreaks = breakJumps;
+    breakJumps = &breaks;
+
+    std::vector<ui64> continues;
+    auto prevContinues = continueJumps;
+    continueJumps = &continues;
+
     expression();
     ui64 falseJump = code.addJump(OP_JUMP_FALSE, reg);
     freeReg();
     matchError(TOK_RIGHT_PAREN, "Expect ')' after condition.");
 
     statement();
+
+    for (ui64 jump : continues)
+        code.patchJump(jump);
+
     code.addLoop(loopStart);
     code.patchJump(falseJump);
+
+    for (ui64 jump : breaks)
+        code.patchJump(jump);
+
+    breakJumps = prevBreaks;
+    continueJumps = prevContinues;
 }
 
 ui64 Compiler::matchCaseHelper(const ui8 matchReg, ui64& fallJump,
@@ -505,7 +534,6 @@ void Compiler::logicAnd()
 
 void Compiler::equality()
 {
-    compileDescent(&Compiler::comparison, TOK_EQ_EQ, OP_EQUAL);
     ui8 firstOper = previousReg;
     comparison();
 
