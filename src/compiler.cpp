@@ -506,6 +506,20 @@ void Compiler::logicAnd()
 void Compiler::equality()
 {
     compileDescent(&Compiler::comparison, TOK_EQ_EQ, OP_EQUAL);
+    ui8 firstOper = previousReg;
+    comparison();
+
+    while (consumeToks(TOK_EQ_EQ, TOK_BANG_EQ))
+    {
+        TokenType oper = previousTok.type;
+        ui8 secondOper = previousReg;
+        comparison();
+
+        code.addOp(OP_EQUAL, firstOper, firstOper, secondOper);
+        if (oper == TOK_BANG_EQ)
+            code.addOp(OP_NOT, firstOper, firstOper);
+        freeReg();
+    }
 }
 
 void Compiler::comparison()

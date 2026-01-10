@@ -317,7 +317,10 @@ DEF(CompareExpr)
     Opcode op;
     switch (node->oper)
     {
-        case TOK_EQ_EQ: op = OP_EQUAL;  break;
+        case TOK_EQ_EQ:
+        case TOK_BANG_EQ:
+            op = OP_EQUAL;
+            break;
         case TOK_GT:
         case TOK_LT_EQ:
             op = OP_GT;
@@ -330,8 +333,9 @@ DEF(CompareExpr)
     }
 
     code.addOp(op, firstOper, firstOper, secondOper);
-    if ((node->oper == TOK_GT_EQ) || (node->oper == TOK_LT_EQ))
-        code.addOp(OP_NOT, firstOper, firstOper);
+    if ((node->oper == TOK_GT_EQ) || (node->oper == TOK_LT_EQ)
+        || (node->oper == TOK_BANG_EQ))
+            code.addOp(OP_NOT, firstOper, firstOper);
     freeReg();
 }
 
