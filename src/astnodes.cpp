@@ -24,9 +24,10 @@ IfStmt::IfStmt(ExprUP condition, StmtUP trueBranch, StmtUP falseBranch) :
     condition(std::move(condition)), trueBranch(std::move(trueBranch)),
     falseBranch(std::move(falseBranch)) {}
 
-WhileStmt::WhileStmt(ExprUP condition, StmtUP body) :
+WhileStmt::WhileStmt(ExprUP condition, StmtUP body, StmtUP elseClause) :
     Stmt(S_WHILE_STMT),
-    condition(std::move(condition)), body(std::move(body)) {}
+    condition(std::move(condition)), body(std::move(body)),
+    elseClause(std::move(elseClause)) {}
 
 MatchStmt::matchCase::matchCase(ExprUP value, StmtUP body,
     bool fall) :

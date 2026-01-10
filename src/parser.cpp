@@ -175,9 +175,13 @@ StmtUP Parser::whileStmt()
     matchError(TOK_LEFT_PAREN, "Expect '(' after 'while'.");
     ExprUP condition = expression();
     matchError(TOK_RIGHT_PAREN, "Expect ')' after condition.");
+    StmtUP body = statement();
+    StmtUP elseClause = nullptr;
+    if (consumeTok(TOK_ELSE))
+        elseClause = statement();
 
     return std::make_unique<WhileStmt>(std::move(condition),
-        statement());
+        std::move(body), std::move(elseClause));
 }
 
 StmtUP Parser::matchStmt()

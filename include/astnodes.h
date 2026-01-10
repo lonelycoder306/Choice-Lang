@@ -89,8 +89,9 @@ namespace AST
         {
             ExprUP condition;
             StmtUP body;
+            StmtUP elseClause;
 
-            WhileStmt(ExprUP condition, StmtUP body);
+            WhileStmt(ExprUP condition, StmtUP body, StmtUP elseClause);
         };
 
         struct MatchStmt : public Stmt

@@ -288,6 +288,9 @@ void Compiler::whileStmt()
     code.addLoop(loopStart);
     code.patchJump(falseJump);
 
+    if (consumeTok(TOK_ELSE))
+        statement();
+
     for (ui64 jump : breaks)
         code.patchJump(jump);
 

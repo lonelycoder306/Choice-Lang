@@ -153,6 +153,9 @@ DEF(WhileStmt)
     code.addLoop(loopStart);
     code.patchJump(falseJump);
 
+    if (node->elseClause != nullptr)
+        compileStmt(node->elseClause);
+
     for (ui64 jump : breaks)
         code.patchJump(jump);
 
