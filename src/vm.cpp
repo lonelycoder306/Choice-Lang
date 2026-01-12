@@ -145,6 +145,7 @@ Object VM::arithOper(Opcode oper)
             OBJ_NUM,
             (IS_NUM(a) ? b.type : a.type)
         );
+    UNREACHABLE();
 }
 
 inline Object VM::compareOper(Opcode op)
