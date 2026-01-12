@@ -8,6 +8,7 @@
 #include <vector>
 
 class TokCompVarsWrapper;
+class TokCompLoopLabels;
 
 class Compiler
 {
@@ -26,6 +27,7 @@ class Compiler
         ui8 scope; // Our current lexical scope depth.
         std::vector<std::vector<std::string>> varScopes;
         TokCompVarsWrapper* varsWrapper;
+        TokCompLoopLabels* labelsWrapper;
         std::vector<ui64>* endJumps;
         std::vector<ui64>* breakJumps;
         std::vector<ui64>* continueJumps;
@@ -80,6 +82,7 @@ class Compiler
         void matchStmt();
         void repeatStmt();
         void returnStmt();
+        void breakStmt();
         void blockStmt();
         void exprStmt();
 

@@ -118,11 +118,8 @@ StmtUP Parser::statement()
         return repeatStmt();
     else if (consumeTok(TOK_LEFT_BRACE))
         return blockStmt();
-    else if (consumeTok(TOK_BREAK)) // Add error handling.
-    {
-        matchError(TOK_SEMICOLON, "Expect ';' after 'break'.");
-        return std::make_unique<BreakStmt>();
-    }
+    else if (consumeTok(TOK_BREAK))
+        return breakStmt();
     else if (consumeTok(TOK_CONT))
     {
         matchError(TOK_SEMICOLON, "Expect ';' after 'continue'.");
@@ -175,13 +172,19 @@ StmtUP Parser::whileStmt()
     matchError(TOK_LEFT_PAREN, "Expect '(' after 'while'.");
     ExprUP condition = expression();
     matchError(TOK_RIGHT_PAREN, "Expect ')' after condition.");
+    Token label; // Default: TOK_EOF.
+    if (consumeTok(TOK_COLON))
+    {
+        matchError(TOK_IDENTIFIER, "Expect loop label after ':'.");
+        label = previousTok;
+    }
     StmtUP body = statement();
     StmtUP elseClause = nullptr;
     if (consumeTok(TOK_ELSE))
         elseClause = statement();
 
     return std::make_unique<WhileStmt>(std::move(condition),
-        std::move(body), std::move(elseClause));
+        label, std::move(body), std::move(elseClause));
 }
 
 StmtUP Parser::matchStmt()
@@ -259,6 +262,17 @@ StmtUP Parser::repeatStmt()
 
     return std::make_unique<RepeatStmt>(std::move(condition),
         std::move(body));
+}
+
+StmtUP Parser::breakStmt()
+{
+    // Add error handling.
+
+    Token name;
+    if (consumeTok(TOK_IDENTIFIER))
+        name = previousTok;
+    matchError(TOK_SEMICOLON, "Expect ';' after 'break'.");
+    return std::make_unique<BreakStmt>(name);
 }
 
 StmtUP Parser::blockStmt()

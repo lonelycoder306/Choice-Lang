@@ -24,9 +24,10 @@ IfStmt::IfStmt(ExprUP condition, StmtUP trueBranch, StmtUP falseBranch) :
     condition(std::move(condition)), trueBranch(std::move(trueBranch)),
     falseBranch(std::move(falseBranch)) {}
 
-WhileStmt::WhileStmt(ExprUP condition, StmtUP body, StmtUP elseClause) :
+WhileStmt::WhileStmt(ExprUP condition, const Token& label, StmtUP body,
+    StmtUP elseClause) :
     Stmt(S_WHILE_STMT),
-    condition(std::move(condition)), body(std::move(body)),
+    condition(std::move(condition)), label(label), body(std::move(body)),
     elseClause(std::move(elseClause)) {}
 
 MatchStmt::matchCase::matchCase(ExprUP value, StmtUP body,
@@ -46,8 +47,9 @@ ReturnStmt::ReturnStmt(Token& keyword, ExprUP expr) :
     Stmt(S_RETURN_STMT),
     keyword(keyword), expr(std::move(expr)) {}
 
-BreakStmt::BreakStmt() :
-    Stmt(S_BREAK_STMT) {}
+BreakStmt::BreakStmt(const Token& label) :
+    Stmt(S_BREAK_STMT),
+    label(label) {}
 
 ContinueStmt::ContinueStmt() :
     Stmt (S_CONT_STMT) {}

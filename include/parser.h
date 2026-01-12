@@ -40,6 +40,7 @@ class Parser
         StmtUP matchStmt();
         StmtUP repeatStmt();
         StmtUP returnStmt();
+        StmtUP breakStmt();
         StmtUP blockStmt();
         StmtUP exprStmt();
 

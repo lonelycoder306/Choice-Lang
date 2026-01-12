@@ -20,15 +20,25 @@ class ASTCompVarsWrapper
         ASTCompVarsWrapper() = default;
 };
 
+class ASTCompLoopLabels
+{
+    public:
+        chainTable<std::string, std::vector<ui64>> labels;
+
+        ASTCompLoopLabels() = default;
+};
+
 ASTCompiler::ASTCompiler() :
     previousReg(0), scope(0), varScopes(1), // For global scope.
     varsWrapper(new ASTCompVarsWrapper),
+    labelsWrapper(new ASTCompLoopLabels),
     endJumps(nullptr), breakJumps(nullptr),
     continueJumps(nullptr) {}
 
 ASTCompiler::~ASTCompiler()
 {
     delete varsWrapper;
+    delete labelsWrapper;
 }
 
 inline void ASTCompiler::defVar(std::string name, ui8 reg)
@@ -133,6 +143,11 @@ DEF(WhileStmt)
 {
     ui8 reg = previousReg;
     ui64 loopStart = code.getLoopStart();
+    if (node->label.type != TOK_EOF)
+        this->labelsWrapper->labels.add(
+            std::string(node->label.text),
+            {}
+        );
 
     std::vector<ui64> breaks;
     auto prevBreaks = breakJumps;
@@ -158,6 +173,14 @@ DEF(WhileStmt)
 
     for (ui64 jump : breaks)
         code.patchJump(jump);
+    if (node->label.type != TOK_EOF)
+    {
+        auto* vec = this->labelsWrapper->labels.get(
+            std::string(node->label.text)
+        );
+        for (ui64 jump : *vec)
+            code.patchJump(jump);
+    }
 
     breakJumps = prevBreaks;
     continueJumps = prevContinues;
@@ -236,7 +259,19 @@ DEF(ReturnStmt) { (void) node; }
 
 DEF(BreakStmt)
 {
-    this->breakJumps->push_back(code.addJump(OP_JUMP));
+    if (node->label.type == TOK_EOF)
+        this->breakJumps->push_back(code.addJump(OP_JUMP));
+    else
+    {
+        auto* vec = this->labelsWrapper->labels.get(
+            std::string(node->label.text)
+        );
+        if (vec == nullptr) // Handle error.
+            throw CompileError(node->label,
+                "Break label is not assigned to any loop.");
+        else
+            vec->push_back(code.addJump(OP_JUMP));
+    }
 }
 
 DEF(ContinueStmt)

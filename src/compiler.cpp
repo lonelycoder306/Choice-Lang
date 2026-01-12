@@ -21,15 +21,25 @@ class TokCompVarsWrapper
         TokCompVarsWrapper() = default;
 };
 
+class TokCompLoopLabels
+{
+    public:
+        chainTable<std::string, std::vector<ui64>> labels;
+
+        TokCompLoopLabels() = default;
+};
+
 Compiler::Compiler() :
     previousReg(0), scope(0), varScopes(1),
     varsWrapper(new TokCompVarsWrapper),
+    labelsWrapper(new TokCompLoopLabels),
     inMatch(false), fall(false), endJumps(nullptr),
     breakJumps(nullptr), continueJumps(nullptr) {}
 
 Compiler::~Compiler()
 {
     delete varsWrapper;
+    delete labelsWrapper;
 }
 
 void Compiler::defVar(std::string name, ui8 reg)
@@ -203,10 +213,7 @@ void Compiler::statement()
     else if (consumeTok(TOK_LEFT_BRACE))
         blockStmt();
     else if (consumeTok(TOK_BREAK))
-    {
-        matchError(TOK_SEMICOLON, "Expect ';' after 'break'.");
-        this->breakJumps->push_back(code.addJump(OP_JUMP));
-    }
+        breakStmt();
     else if (consumeTok(TOK_CONT))
     {
         matchError(TOK_SEMICOLON, "Expect ';' after 'continue'.");
@@ -280,6 +287,17 @@ void Compiler::whileStmt()
     freeReg();
     matchError(TOK_RIGHT_PAREN, "Expect ')' after condition.");
 
+    Token label;
+    if (consumeTok(TOK_COLON))
+    {
+        matchError(TOK_IDENTIFIER, "Expect loop label after ':'.");
+        label = previousTok;
+        this->labelsWrapper->labels.add(
+            std::string(label.text),
+            {}
+        );
+    }
+
     statement();
 
     for (ui64 jump : continues)
@@ -293,6 +311,16 @@ void Compiler::whileStmt()
 
     for (ui64 jump : breaks)
         code.patchJump(jump);
+
+    if (label.type != TOK_EOF)
+    {
+        auto* vec = this->labelsWrapper->labels.get(
+            std::string(label.text)
+        );
+
+        for (ui64 jump : *vec)
+            code.patchJump(jump);
+    }
 
     breakJumps = prevBreaks;
     continueJumps = prevContinues;
@@ -416,6 +444,25 @@ void Compiler::repeatStmt()
     freeReg();
     code.addLoop(loopStart);
     code.patchJump(trueJump);
+}
+
+void Compiler::breakStmt()
+{
+    if (consumeTok(TOK_IDENTIFIER))
+    {
+        const Token& label = previousTok;
+        auto* vec = this->labelsWrapper->labels.get(
+            std::string(label.text)
+        );
+
+        if (vec == nullptr)
+            throw CompileError(label, "Break label is not assigned to any loop.");
+        vec->push_back(code.addJump(OP_JUMP));
+    }
+    else
+        this->breakJumps->push_back(code.addJump(OP_JUMP));
+
+    matchError(TOK_SEMICOLON, "Expect ';' after 'break'.");
 }
 
 void Compiler::blockStmt()

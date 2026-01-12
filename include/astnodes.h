@@ -88,10 +88,12 @@ namespace AST
         struct WhileStmt : public Stmt
         {
             ExprUP condition;
+            Token label;
             StmtUP body;
             StmtUP elseClause;
 
-            WhileStmt(ExprUP condition, StmtUP body, StmtUP elseClause);
+            WhileStmt(ExprUP condition, const Token& label, StmtUP body,
+                StmtUP elseClause);
         };
 
         struct MatchStmt : public Stmt
@@ -129,7 +131,9 @@ namespace AST
 
         struct BreakStmt : public Stmt
         {
-            BreakStmt();
+            Token label;
+
+            BreakStmt(const Token& label);
         };
 
         struct ContinueStmt : public Stmt
