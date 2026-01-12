@@ -176,8 +176,8 @@ class Token
 		friend class VM;
 };
 
-#define IS_LITERAL(type)	((TOK_NUM <= type) && (type <= TOK_NULL))
-#define IS_TYPE(type)		((TOK_INT <= type) && (type <= TOK_ANY))
+#define IS_LITERAL(type)	((TOK_NUM <= (type)) && ((type) <= TOK_NULL))
+#define IS_TYPE(type)		((TOK_INT <= (type)) && ((type) <= TOK_ANY))
 #define IS_ASSIGN(type) \
 	(((type) == TOK_EQUAL) \
 	|| (((type) >= TOK_PLUS_EQ) && ((type) <= TOK_RSHIFT_EQ)))
