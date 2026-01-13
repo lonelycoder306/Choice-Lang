@@ -15,7 +15,6 @@ enum Opcode : ui8 // Each opcode is a single byte.
 	OP_TRUE,		// true
 	OP_FALSE,		// false
 	OP_NULL,		// null
-    OP_CONST,       // Load a constant.
 	
 	// Arithmetic.
 
@@ -74,7 +73,6 @@ enum Opcode : ui8 // Each opcode is a single byte.
 	OP_SHORT_OPER,	// Operand is two bytes.
 	OP_LONG_OPER,	// Operand is four bytes.
 
-	// For testing.
 	OP_LOAD_R,		// Load a constant into a register.
 	OP_MOVE_R,		// Store a register's value in another register.
 };
@@ -82,7 +80,6 @@ enum Opcode : ui8 // Each opcode is a single byte.
 static std::string_view opNames[] = {
 	"OP_NEG_TWO", "OP_NEG_ONE", "OP_ZERO", "OP_ONE",
 	"OP_TWO", "OP_TRUE", "OP_FALSE", "OP_NULL",
-    "OP_CONST",
 
 	"OP_ADD", "OP_SUB", "OP_MULT", "OP_DIV", "OP_POWER",
 	"OP_MOD", "OP_NEGATE", "OP_INCREMENT", "OP_DECREMENT",
