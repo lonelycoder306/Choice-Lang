@@ -43,13 +43,13 @@ std::string HeapObj::printType()
 {
     switch (type)
     {
-        case OBJ_BIGINT:   return "BIGINT";    break;
-        case OBJ_BIGDEC:   return "BIGDEC";    break;
-        case OBJ_STRING:   return "STRING";    break;
-        case OBJ_RANGE:    return "RANGE";     break;
-        case OBJ_LIST:     return "LIST";      break;
-        case OBJ_TABLE:    return "TABLE";     break;
-        default:           return "";
+        case OBJ_BIGINT:    return "BIGINT";    break;
+        case OBJ_BIGDEC:    return "BIGDEC";    break;
+        case OBJ_STRING:    return "STRING";    break;
+        case OBJ_RANGE:     return "RANGE";     break;
+        case OBJ_LIST:      return "LIST";      break;
+        case OBJ_TABLE:     return "TABLE";     break;
+        default:            return "";
     }
 }
 
@@ -194,7 +194,7 @@ std::string Object::printVal() const
     switch (type)
     {
         case OBJ_INT:   return std::to_string(AS_INT(*this));
-        case OBJ_DEC:   return std::to_string(AS_DEC(*this)).substr(0, 4);
+        case OBJ_DEC:   return std::to_string(AS_DEC(*this));
         case OBJ_BOOL:  return (AS_BOOL(*this) ? "true" : "false");
         case OBJ_NULL:  return "null";
         default:        return AS_HEAP_PTR(*this)->printVal();
