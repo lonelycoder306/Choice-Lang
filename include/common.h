@@ -35,16 +35,16 @@
 
 #ifndef NDEBUG
 #include <cstdlib>
-#define ASSERT(expr, msg) \
-	do { \
-		if (expr) \
-			break; \
-		else \
-		{ \
-			FORMAT_PRINT("ASSERTION FAILED [%s: %s, %d]: %s.\n", \
-				(__FILE__), (__func__), (__LINE__), msg); \
-			exit(EXIT_FAILURE); \
-		} \
+#define ASSERT(expr, msg)											\
+	do {															\
+		if (expr)													\
+			break;													\
+		else														\
+		{															\
+			FORMAT_PRINT("ASSERTION FAILED [%s: %s, %d]: %s.\n",	\
+				(__FILE__), (__func__), (__LINE__), msg);			\
+			exit(EXIT_FAILURE);										\
+		}															\
 	} while (false)
 #else
 #define ASSERT(expr, msg)
