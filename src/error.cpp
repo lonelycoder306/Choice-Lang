@@ -40,3 +40,21 @@ void CompileError::report()
     else
         FORMAT_PRINT(" at end: {}\n", message);
 }
+
+// RuntimeError.
+
+RuntimeError::RuntimeError(const Token& token,
+    const std::string& message) :
+    Error(message), token(token) {}
+
+void RuntimeError::report()
+{
+    FORMAT_PRINT(stderr, "Runtime Error");
+    if (token.type != TOK_EOF)
+    {
+        FORMAT_PRINT(" at '{}' [{}:{}]: {}\n",
+            token.text, token.line, token.position, message);
+    }
+    else
+        FORMAT_PRINT(" at end: {}\n", message);
+}

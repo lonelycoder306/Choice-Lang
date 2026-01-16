@@ -5,6 +5,7 @@
 #include "../include/bytecode.h"
 #include "../include/common.h"
 #include "../include/error.h"
+#include "../include/natives.h"
 #include "../include/opcodes.h"
 #include "../include/vartable.h"
 
@@ -529,7 +530,36 @@ DEF(UnaryExpr)
     // register.
 }
 
-DEF(CallExpr) { (void) node; }
+DEF(CallExpr)
+{
+    // For now only assuming:
+    // [builtin identfier]!(args...)
+    VarExpr* var = static_cast<VarExpr*>(node->callee.get());
+
+    // Assuming no errors for the time being.
+    ui8 location;
+    if (node->builtin)
+    {
+        Natives::FuncType func = Natives::builtins.find(
+            var->name.text
+        )->second;
+        location = static_cast<ui8>(func);
+    }
+    else
+        location = *(getVarSlot(node->callee));
+
+    ui8 argsStart = previousReg;
+    for (ExprUP& arg : node->args)
+        compileExpr(arg);
+
+    ui8 size = static_cast<ui8>(node->args.size());
+    code.addOp(node->builtin ? OP_CALL_NAT : OP_CALL_DEF,
+        location, argsStart, size);
+
+    // Skip arguments.
+    // Our return value replaces the first argument.
+    previousReg -= size - 1;
+}
 
 DEF(IfExpr)
 {

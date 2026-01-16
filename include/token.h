@@ -17,7 +17,7 @@ typedef union Value {
 class Lexer;
 class TokenPrinter;
 class Compiler; class AltCompiler;
-class CompileError;
+class CompileError; class RuntimeError;
 class VM;
 
 enum TokenType : ui8
@@ -173,6 +173,7 @@ class Token
 		friend class Compiler;
 		friend class ASTCompiler;
 		friend class CompileError;
+		friend class RuntimeError;
 		friend class VM;
 };
 

@@ -2,8 +2,8 @@
 
 // #define TIME_TOTAL
 #define TIME_RUN
-#define WATCH_EXEC
-#define WATCH_REG
+// #define WATCH_EXEC
+// #define WATCH_REG
 
 constexpr int TAB_SIZE = 4;
 

@@ -1,5 +1,6 @@
 #include "../include/disasm.h"
 #include "../include/common.h"
+#include "../include/natives.h"
 #include "../include/opcodes.h"
 
 #define PRINT_FULL_OFFSET
@@ -129,6 +130,25 @@ void Disassembler::jumpOper(ui8 byte, int sign)
 	FORMAT_PRINT("-> {}\n", ip - start + (sign * jump));
 }
 
+void Disassembler::callOper(std::string_view opName)
+{
+	printOpcode(opName);
+	
+	// For now only handling built-in functions.
+
+	ui8 callee = restoreByte();
+	std::string_view func = Natives::funcNames[callee];
+	ip++;
+
+	ui8 start = restoreByte();
+	ip++;
+
+	ui8 count = restoreByte();
+	ip += 2;
+
+	FORMAT_PRINT("'{}' ({}) R[{}]\n", func, count, start);
+}
+
 void Disassembler::disassembleOp(ui8 byte)
 {
 	switch (byte)
@@ -146,8 +166,9 @@ void Disassembler::disassembleOp(ui8 byte)
 		case OP_JUMP:		case OP_JUMP_TRUE:	case OP_JUMP_FALSE:		case OP_LOOP:
 			jumpOper(byte, byte == OP_LOOP ? -1 : 1);
 			break;
-		case OP_LOAD_R: loadOper("OP_LOAD_R");  	break;
-		case OP_RETURN:	singleOper("OP_RETURN");	break;
+		case OP_LOAD_R: 	loadOper("OP_LOAD_R");  	break;
+		case OP_CALL_NAT:	callOper(opNames[byte]);	break;
+		case OP_RETURN:		singleOper("OP_RETURN");	break;
 		default:
 		{
 			FORMAT_PRINT("{:0>4} UNKNOWN OPCODE {}\n",

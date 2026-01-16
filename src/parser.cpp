@@ -455,15 +455,46 @@ ExprUP Parser::unary()
 
 ExprUP Parser::exponent()
 {
-    ExprUP expr = post();
+    ExprUP expr = call();
     while (consumeTok(TOK_STAR_STAR))
     {
         TokenType oper = previousTok.type;
         expr = std::make_unique<BinaryExpr>(std::move(expr), oper,
-            post());
+            call());
     }
 
     return expr;
+}
+
+ExprUP Parser::call()
+{
+    ExprUP expr = post();
+    if (consumeToks(TOK_BANG, TOK_LEFT_PAREN))
+    {
+        bool builtin = (previousTok.type == TOK_BANG ?
+           (matchError(TOK_LEFT_PAREN, "Invalid placement for token '!'."), true)
+           : false);
+        
+        // Callee does not need to be an identifier.
+        // Just has to evaluate to a callable object.
+        // Exception: builtin with ! token.
+
+        if (expr->type != E_VAR_EXPR)
+            throw CompileError(previousTok, "Attempting to call a non-callable object.");
+
+        ExprVec args;
+        while (!checkTok(TOK_RIGHT_PAREN) && !checkTok(TOK_EOF))
+        {
+            do {
+                args.push_back(expression());
+            } while (consumeTok(TOK_COMMA));
+        }
+        matchError(TOK_RIGHT_PAREN, "Expect ')' following function arguments.");
+        return std::make_unique<CallExpr>(std::move(expr), args, builtin,
+            previousTok);
+    }
+    else
+        return expr;
 }
 
 ExprUP Parser::post()

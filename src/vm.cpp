@@ -1,5 +1,7 @@
 #include "../include/vm.h"
 #include "../include/disasm.h"
+#include "../include/error.h"
+#include "../include/natives.h"
 #include "../include/opcodes.h"
 #include <cmath>
 #include <cstring>
@@ -359,6 +361,18 @@ void VM::executeOp(Opcode op, const vObj& pool)
             break;
         }
 
+        // Functions.
+        case OP_CALL_NAT:
+        {
+            ui8 callee = readByte();
+            ui8 start = readByte();
+            ui8 argCount = readByte();
+
+            registers[start] = Natives::functions[callee](
+                &registers[start], argCount, Token() // Temporarily.
+            );
+        }
+
         default: break;
     }
 }
@@ -389,6 +403,10 @@ void VM::executeCode(const ByteCode& code)
             #endif
         }
         catch (TypeMismatch& error)
+        {
+            error.report();
+        }
+        catch (RuntimeError& error)
         {
             error.report();
         }

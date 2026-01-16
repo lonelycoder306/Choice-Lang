@@ -260,8 +260,11 @@ namespace AST
         {
             ExprUP callee;
             ExprVec args;
+            bool builtin;
+            Token rightParen; // For error reporting.
 
-            CallExpr(ExprUP callee, ExprVec& args);
+            CallExpr(ExprUP callee, ExprVec& args, bool builtin,
+                const Token& paren);
         };
 
         struct IfExpr : public Expr

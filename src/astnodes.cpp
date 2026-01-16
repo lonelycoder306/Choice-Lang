@@ -98,9 +98,11 @@ UnaryExpr::UnaryExpr(Token oper, ExprUP expr, bool prev) :
     Expr(E_UNARY_EXPR),
     oper(oper), expr(std::move(expr)), prev(prev) {}
 
-CallExpr::CallExpr(ExprUP callee, ExprVec& args) :
+CallExpr::CallExpr(ExprUP callee, ExprVec& args, bool builtin,
+    const Token& paren) :
     Expr(E_CALL_EXPR),
-    callee(std::move(callee)), args(std::move(args)) {}
+    callee(std::move(callee)), args(std::move(args)), builtin(builtin),
+    rightParen(paren) {}
 
 IfExpr::IfExpr(ExprUP condition, ExprUP trueExpr, ExprUP falseExpr) :
     Expr(E_IF_EXPR),

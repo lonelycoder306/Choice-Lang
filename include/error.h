@@ -38,6 +38,16 @@ class CompileError : public Error
 		void report();
 };
 
-class RuntimeError : public Error {};
+class RuntimeError : public Error
+{
+	private:
+		Token token; // Temporarily, at least.
+
+	public:
+		RuntimeError(const Token& token, const std::string& message);
+
+		void report();
+};
+
 class TypeError : public Error {}; // For static type-checking.
 class CodeError : public Error {}; // For invalid externally-loaded byte-code.

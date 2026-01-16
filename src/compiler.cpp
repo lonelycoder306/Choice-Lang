@@ -4,10 +4,12 @@
 #include "../include/compiler.h"
 #include "../include/common.h"
 #include "../include/error.h"
+#include "../include/natives.h"
 #include "../include/object.h"
 #include "../include/opcodes.h"
 #include "../include/token.h"
 #include "../include/vartable.h"
+#include <string_view>
 
 constexpr bool accessFix = false;
 constexpr bool accessVar = true;
@@ -774,7 +776,51 @@ void Compiler::unary()
 
 void Compiler::exponent()
 {
-    compileDescent(&Compiler::post, TOK_STAR_STAR, OP_POWER);
+    compileDescent(&Compiler::call, TOK_STAR_STAR, OP_POWER);
+}
+
+void Compiler::call()
+{
+    const Token& firstTok = currentTok;
+    const Token& secondTok = *(it + 1);
+
+    if ((firstTok.type == TOK_IDENTIFIER)
+        && ((secondTok.type == TOK_BANG) || (secondTok.type == TOK_LEFT_PAREN)))
+    {
+        consumeTok(TOK_IDENTIFIER);
+        Token funcName = previousTok;
+        nextTok();
+        bool builtin = (previousTok.type == TOK_BANG ?
+            (matchError(TOK_LEFT_PAREN, "Invalid placement for token '!'."), true)
+            : false);
+
+        ui8 location;
+        if (builtin)
+        {
+            Natives::FuncType func = Natives::builtins.find(funcName.text)->second;
+            location = static_cast<ui8>(func);
+        }
+        else
+            location = *(getVarSlot(funcName));
+
+        ui8 startReg = previousReg;
+        ui8 argCount = 0;
+        while (!checkTok(TOK_RIGHT_PAREN) && !checkTok(TOK_EOF))
+        {
+            do {
+                expression();
+                argCount++;
+            } while (consumeTok(TOK_COMMA));
+        }
+        matchError(TOK_RIGHT_PAREN, "Expect ')' following function arguments.");
+
+        code.addOp(builtin ? OP_CALL_NAT : OP_CALL_DEF,
+            location, startReg, argCount);
+
+        previousReg -= argCount - 1;
+    }
+    else
+        post();
 }
 
 void Compiler::post()
@@ -864,6 +910,12 @@ void Compiler::primary()
         else
             throw CompileError(previousTok, "Undefined variable '"
                 + std::string(previousTok.text) + "'.");
+    }
+
+    else if (consumeTok(TOK_LEFT_PAREN))
+    {
+        expression();
+        matchError(TOK_RIGHT_PAREN, "Expect closing parenthesis ')'.");
     }
 
     else if (consumeTok(TOK_IF))

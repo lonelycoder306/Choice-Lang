@@ -141,7 +141,7 @@ static void runFile(const char* fileName, ArgvOption option = EXECUTE)
 
 	using namespace std::chrono;
 	#if defined(TIME_TOTAL) && !defined(TIME_RUN)
-		auto begin = high_resolution_clock::now();
+		auto begin = steady_clock::now();
 	#endif
 
 	std::string code = readFile(fileName);
@@ -194,14 +194,14 @@ static void runFile(const char* fileName, ArgvOption option = EXECUTE)
 	}
 
 	#if defined(TIME_RUN) && !defined(TIME_TOTAL)
-		auto begin = high_resolution_clock::now();
+		auto begin = steady_clock::now();
 	#endif
 
 	// Execution logic.
 	vm.executeCode(chunk);
 
 	#if defined(TIME_RUN) || defined(TIME_TOTAL)
-		auto end = high_resolution_clock::now();
+		auto end = steady_clock::now();
 		auto time = duration_cast<microseconds>(end - begin);
 		FORMAT_PRINT("Time: {:.6f}\n",
 			static_cast<long double>(time.count()) / 1000000);
