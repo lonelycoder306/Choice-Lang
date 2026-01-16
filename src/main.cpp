@@ -12,6 +12,7 @@
 #include "../include/lexer.h"
 #include "../include/main_utils.h"
 #include "../include/tokprinter.h"
+#include "../include/utils.h"
 #include <chrono>
 #include <cstdio> // For stderr.
 #include <filesystem>
@@ -229,8 +230,17 @@ static void repl(ArgvOption option = EXECUTE)
 	VM vm; // Must persist for the entire execution.
 	while (true)
 	{
-		std::cout << ">>> ";
+		FORMAT_PRINT(">>> ");
 		std::getline(std::cin, line);
+
+		while (ends_with(line, "\\"))
+		{
+			line[line.size() - 1] = '\n';
+			std::string temp;
+			FORMAT_PRINT("... ");
+			std::getline(std::cin, temp);
+			line += temp;
+		}
 
 		if (!line.empty())
 		{
