@@ -29,16 +29,16 @@ void TokenPrinter::printValue(const Token& token)
 {
     switch (token.type)
     {
-        case TOK_NUM:   FORMAT_PRINT("{}", token.content.i);    break;
-        case TOK_DEC:   FORMAT_PRINT("{}", token.content.d);    break;
+        case TOK_NUM:       FORMAT_PRINT("{}", token.content.i);    break;
+        case TOK_NUM_DEC:   FORMAT_PRINT("{}", token.content.d);    break;
         case TOK_STR_LIT:
             FORMAT_PRINT("{}", formatMultiLineString(
                 token.text.substr(1, token.text.size() - 2)
             ));
             break;
-        case TOK_TRUE:  FORMAT_PRINT("true");                   break;
-        case TOK_FALSE: FORMAT_PRINT("false");                  break;
-        case TOK_NULL:  FORMAT_PRINT("{}", token.content.s);    break;
+        case TOK_TRUE:      FORMAT_PRINT("true");                   break;
+        case TOK_FALSE:     FORMAT_PRINT("false");                  break;
+        case TOK_NULL:      FORMAT_PRINT("{}", token.content.s);    break;
         default: UNREACHABLE();
     }
 }
