@@ -175,7 +175,7 @@ void ByteCode::cacheStream(std::ofstream& os) const
 		sizeof(ui64));
 
 	// File name.
-	os.write(file.data(), file.size());	
+	os.write(file.data(), file.size());
 
 	// Bytecode.
 	os.write(reinterpret_cast<const char*>(block.data()),
