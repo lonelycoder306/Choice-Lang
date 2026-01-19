@@ -1,4 +1,5 @@
 *.txt
+!THIRD_PARTY_LICENSES/*.txt
 *.md
 !README.md
 *.json
@@ -8,5 +9,6 @@ extras/
 build/
 sources/
 VS Solution/
+dependencies/
 .env
 choice
