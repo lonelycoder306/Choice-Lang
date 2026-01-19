@@ -612,7 +612,8 @@ void Compiler::comparison()
     ui8 firstOper = previousReg;
     bitOr();
 
-    while (consumeToks(TOK_GT, TOK_GT_EQ, TOK_LT, TOK_LT_EQ))
+    while (consumeToks(TOK_GT, TOK_GT_EQ, TOK_LT, TOK_LT_EQ,
+        TOK_IN))
     {
         TokenType oper = previousTok.type;
         ui8 secondOper = previousReg;
@@ -620,6 +621,9 @@ void Compiler::comparison()
 
         switch (oper)
         {
+            case TOK_IN:
+                code.addOp(OP_IN, firstOper, firstOper, secondOper);
+                break;
             case TOK_GT:
             case TOK_LT_EQ:
                 code.addOp(OP_GT, firstOper, firstOper, secondOper);

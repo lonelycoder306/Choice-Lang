@@ -391,6 +391,9 @@ DEF(CompareExpr)
     Opcode op;
     switch (node->oper)
     {
+        case TOK_IN:
+            op = OP_IN;
+            break;
         case TOK_EQ_EQ:
         case TOK_BANG_EQ:
             op = OP_EQUAL;

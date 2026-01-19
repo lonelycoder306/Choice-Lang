@@ -147,6 +147,21 @@ inline Object VM::compareOper(Opcode op)
         case OP_EQUAL:  return (a == b);
         case OP_GT:     return (a > b);
         case OP_LT:     return (a < b);
+        case OP_IN:
+        {
+            if (IS_STRING(&a) && IS_STRING(&b)) // Temporarily.
+            {
+                const String& s1 = AS_CONST_STRING(AS_HEAP_PTR(a));
+                const String& s2 = AS_CONST_STRING(AS_HEAP_PTR(b));
+                return (strstr(s2.str.c_str(), s1.str.c_str()) != nullptr);
+            }
+            else
+                throw TypeMismatch(
+                    "Left operand not matching member type of iterable object.",
+                    OBJ_STRING,
+                    (IS_STRING(&a) ? b.type : a.type)
+                );
+        }
         default: UNREACHABLE();
     }
 }
@@ -376,7 +391,7 @@ void VM::executeOp(Opcode op, const vObj& pool)
         }
 
         // Comparison operators.
-        CASE(OP_GT):    CASE(OP_LT):    CASE(OP_EQUAL):
+        CASE(OP_GT):    CASE(OP_LT):    CASE(OP_EQUAL):     CASE(OP_IN):
         {
             ui8 dest = readByte();
             registers[dest] = compareOper(op);

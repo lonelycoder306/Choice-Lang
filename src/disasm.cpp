@@ -155,8 +155,8 @@ void Disassembler::disassembleOp(ui8 byte)
 	{
 		case OP_ADD:		case OP_SUB:		case OP_MULT:			case OP_DIV:
 		case OP_MOD:		case OP_POWER:		case OP_EQUAL:			case OP_GT:
-		case OP_LT:			case OP_BIT_AND:	case OP_BIT_OR:			case OP_BIT_XOR:
-		case OP_BIT_SHIFT_R:	case OP_BIT_SHIFT_L:
+		case OP_LT:			case OP_IN:			case OP_BIT_AND:		case OP_BIT_OR:
+		case OP_BIT_XOR:	case OP_BIT_SHIFT_R:	case OP_BIT_SHIFT_L:
 			tripleOper(opNames[byte]);
 			break;
 		case OP_GET_VAR:	case OP_SET_VAR:	case OP_INCREMENT:	case OP_DECREMENT:
