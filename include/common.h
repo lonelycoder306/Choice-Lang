@@ -28,7 +28,7 @@
 	#ifndef FMT_HEADER_ONLY
 		#define FMT_HEADER_ONLY
 	#endif
-	#include <fmt/format.h>
+	#include "format.h" // From libfmt.
 	#define FORMAT_PRINT	fmt::print
 	#define FORMAT_STR		fmt::format
 #endif
