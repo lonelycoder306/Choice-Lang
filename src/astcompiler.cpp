@@ -392,6 +392,7 @@ DEF(CompareExpr)
     switch (node->oper)
     {
         case TOK_IN:
+        case TOK_NOT: // not in
             op = OP_IN;
             break;
         case TOK_EQ_EQ:
@@ -410,8 +411,8 @@ DEF(CompareExpr)
     }
 
     code.addOp(op, firstOper, firstOper, secondOper);
-    if ((node->oper == TOK_GT_EQ) || (node->oper == TOK_LT_EQ)
-        || (node->oper == TOK_BANG_EQ))
+    if ((node->oper == TOK_NOT) || (node->oper == TOK_GT_EQ)
+        || (node->oper == TOK_LT_EQ) || (node->oper == TOK_BANG_EQ))
             code.addOp(OP_NOT, firstOper, firstOper);
     freeReg();
 }

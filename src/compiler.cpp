@@ -613,15 +613,17 @@ void Compiler::comparison()
     bitOr();
 
     while (consumeToks(TOK_GT, TOK_GT_EQ, TOK_LT, TOK_LT_EQ,
-        TOK_IN))
+        TOK_IN) || (consumeTok(TOK_NOT) && checkTok(TOK_IN)))
     {
         TokenType oper = previousTok.type;
+        if (oper == TOK_NOT) nextTok();
         ui8 secondOper = previousReg;
         bitOr();
 
         switch (oper)
         {
             case TOK_IN:
+            case TOK_NOT: // not in
                 code.addOp(OP_IN, firstOper, firstOper, secondOper);
                 break;
             case TOK_GT:
@@ -635,8 +637,9 @@ void Compiler::comparison()
             default: UNREACHABLE();
         }
 
-        if ((oper == TOK_GT_EQ) || (oper == TOK_LT_EQ))
-            code.addOp(OP_NOT, firstOper, firstOper);
+        if ((oper == TOK_NOT) || (oper == TOK_GT_EQ)
+            || (oper == TOK_LT_EQ))
+                code.addOp(OP_NOT, firstOper, firstOper);
 
         freeReg();
     }

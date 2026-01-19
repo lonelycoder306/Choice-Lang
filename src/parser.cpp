@@ -355,9 +355,10 @@ ExprUP Parser::comparison()
 {
     ExprUP expr = bitOr();
     while (consumeToks(TOK_GT, TOK_GT_EQ, TOK_LT, TOK_LT_EQ,
-        TOK_IN))
+        TOK_IN) || (consumeTok(TOK_NOT) && checkTok(TOK_IN)))
     {
         TokenType oper = previousTok.type;
+        if (oper == TOK_NOT) nextTok();
         expr = std::make_unique<CompareExpr>(std::move(expr), oper,
             bitOr());
     }
