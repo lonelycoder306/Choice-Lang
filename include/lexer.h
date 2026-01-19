@@ -12,14 +12,13 @@ struct ClassState
 class Lexer
 {
     private:
-        std::string_view code;
+        const char* start;
+        const char* current;
+        const char* end;
         vT stream;
         ui16 line;
         ui8 column;
-        ui32 start;
-        ui32 current;
         ClassState state;
-        // bool inGrouping;
 
         // Utilities.
 
@@ -27,7 +26,7 @@ class Lexer
         inline char advance(); // Move to next character.
         inline bool checkChar(char c); // Check next character.
         inline bool consumeChar(char c); // Only advance if char matches.
-        inline void consumeChars(char c, int count = 1);
+        inline void consumeChars(int count = 1);
         inline char peekChar(int distance = 0);
         inline char previousChar(int distance = 0);
         TokenType identifierType();

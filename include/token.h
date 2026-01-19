@@ -6,20 +6,6 @@
 #include <string_view>
 #include <variant>
 
-// Can hold a literal of any needed size.
-typedef union Value {
-	const char*		s; // For NULL exclusively.
-	i64				i;
-	double			d;
-	bool			b;
-} Value;
-
-class Lexer;
-class TokenPrinter;
-class Compiler; class AltCompiler;
-class CompileError; class RuntimeError;
-class VM;
-
 enum TokenType : ui8
 {
 	/* Characters. */
@@ -151,6 +137,20 @@ enum TokenType : ui8
 
 	TOK_EOF
 };
+
+// Can hold a literal of any needed size.
+typedef union Value {
+	const char*		s; // For NULL exclusively.
+	i64				i;
+	double			d;
+	bool			b;
+} Value;
+
+class Lexer;
+class TokenPrinter;
+class Compiler; class AltCompiler;
+class CompileError; class RuntimeError;
+class VM;
 
 class Token
 {

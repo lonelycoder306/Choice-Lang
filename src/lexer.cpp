@@ -22,12 +22,12 @@ static std::unordered_map<std::string_view, TokenType> keywords = {
 };
 
 Lexer::Lexer() :
-	line(1), column(1), start(0), current(0),
-	state({false, 0}) {}
+	start(nullptr), current(nullptr), end(nullptr),
+	line(1), column(1), state({false, 0}) {}
 
 inline bool Lexer::hitEnd()
 {
-	return (current >= code.length());
+	return (current >= end);
 }
 
 inline char Lexer::advance()
@@ -35,14 +35,14 @@ inline char Lexer::advance()
 	if (!hitEnd())
 	{
 		current++;
-		if (code[current - 1] == '\n')
+		if (current[-1] == '\n')
 		{
 			line++;
 			column = 1;
 		}
 		else
 			column++;
-		return code[current - 1];
+		return current[-1];
 	}
 
 	return EOF;
@@ -51,7 +51,7 @@ inline char Lexer::advance()
 inline bool Lexer::checkChar(char c)
 {
 	if (!hitEnd())
-		return (code[current] == c);
+		return (*current == c);
 	return false;
 }
 
@@ -66,23 +66,22 @@ inline bool Lexer::consumeChar(char c)
 	return false;
 }
 
-inline void Lexer::consumeChars(char c, int count /* = 1 */)
+inline void Lexer::consumeChars(int count /* = 1 */)
 {
-	for (int i = 0; i < count; i++)
-		consumeChar(c);
+	current += count;
 }
 
 inline char Lexer::peekChar(int distance /* = 0 */)
 {
-	if (current + distance < code.length())
-		return code[current + distance];
+	if (current + distance < end)
+		return current[distance];
 	return EOF;
 }
 
 inline char Lexer::previousChar(int distance /* = 0 */)
 {
-	if (current - distance > 1)
-		return code[current - distance - 1];
+	if (current - distance - 1 > start)
+		return current[- distance - 1];
 	return EOF;
 }
 
@@ -134,7 +133,7 @@ inline bool Lexer::boolValue(TokenType type)
 
 void Lexer::makeToken(TokenType type)
 {
-	std::string_view text = code.substr(start, current - start);
+	std::string_view text(start, current - start);
 
 	Value value;
 	if (IS_LITERAL(type))
@@ -206,7 +205,7 @@ void Lexer::multiStringToken()
 
 	advance(); // Consume final `.
 
-	stream.emplace_back(TOK_STR_LIT, code.substr(start, current - start),
+	stream.emplace_back(TOK_STR_LIT, std::string_view(start, current - start),
 		Value(), tempLine, tempColumn);
 }
 
@@ -215,7 +214,7 @@ TokenType Lexer::identifierType()
 	if (current - start < 2)
 		return TOK_IDENTIFIER;
 	
-	std::string_view text = code.substr(start, current - start);
+	std::string_view text(start, current - start);
 	auto it = keywords.find(text);
 	if (it != keywords.end())
 	{
@@ -261,7 +260,7 @@ bool Lexer::checkHyperComment()
 
 		// Check for closing ###.
 		if (matchSequence('#', 3))
-			consumeChars('#', 3);
+			consumeChars(3);
 		else
 			throw LexError(peekChar(), line, column + 1,
 				"Unterminated nested comment.");
@@ -444,7 +443,9 @@ void Lexer::singleToken()
 
 vT& Lexer::tokenize(std::string_view code)
 {
-	this->code = code;
+	start = code.data();	
+	current = start;
+	end = start + code.size();
 	stream.reserve(code.size() / AVG_TOK_SIZE);
 	
 	// Consider placing the try-catch block inside
