@@ -36,7 +36,8 @@
 #if EXTERNAL_REPL
 	#define TRACK_REPL_HISTORY	1
 	#define SAVE_REPL_HISTORY	1
-	#define LOAD_REPL_HISTORY	1
+	#define LOAD_REPL_HISTORY	0
+	#define CLEAR_REPL_HISTORY	1
 #endif
 
 std::string file = "";
@@ -257,6 +258,9 @@ static void repl(ArgvOption option = EXECUTE)
 
 	#if LOAD_REPL_HISTORY
 		rx.history_load("history.txt");
+	#elif CLEAR_REPL_HISTORY
+		std::ofstream history("history.txt", std::ios::trunc);
+		if (history.is_open()) history.close();
 	#endif
 
 	VM vm; // Must persist for the entire execution.
