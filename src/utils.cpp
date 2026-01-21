@@ -38,11 +38,11 @@ split(const std::string_view& str, std::string_view delim)
     return result;      
 }
 
-std::array<i32, 3> constructRange(std::string_view tokText)
+std::array<i64, 3> constructRange(std::string_view tokText)
 {
 	auto parts = split(tokText, "..");
-	auto transform = [](const std::string_view& text) -> i32 {
-		i32 ret = 0;
+	auto transform = [](const std::string_view& text) -> i64 {
+		i64 ret = 0;
 		for (char c : text)
 		{
 			if (isdigit(c))
@@ -54,7 +54,7 @@ std::array<i32, 3> constructRange(std::string_view tokText)
 		return ret;
 	};
 
-	std::array<i32, 3> nums;
+	std::array<i64, 3> nums;
 	nums[0] = transform(parts[0]);
 	nums[1] = transform(parts[1]);
 	if (parts.size() == 3)

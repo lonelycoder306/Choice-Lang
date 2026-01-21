@@ -33,8 +33,11 @@ std::string HeapObj::printVal() const
     else if (IS_RANGE(this))
     {
         const Range& range = AS_CONST_RANGE(this);
-        return FORMAT_STR("{}..{}, {}", range.start,
-            range.stop, range.step);
+        auto retStr = FORMAT_STR("{}..{}", range.start,
+            range.stop);
+        if (range.step != 1)
+            retStr += FORMAT_STR("..{}", range.step);
+        return retStr;
     }
     return ""; // Temporary.
 }
@@ -80,9 +83,16 @@ String::String(const std::string& str) :
 String::String(const std::string_view& view) :
     HeapObj(OBJ_STRING), str(view) {}
 
-Range::Range(i32 start, i32 stop, i32 step) :
-    HeapObj(OBJ_RANGE), start(start), stop(stop),
-    step(step) {}
+String::String(const char* str, size_t len = -1) :
+    HeapObj(OBJ_STRING)
+{
+    if (len == -1) len = strlen(str);
+    this->str = std::string(str, len);
+}
+
+Range::Range(const std::array<i64, 3>& limits) :
+    HeapObj(OBJ_RANGE), start(limits[0]), stop(limits[1]),
+    step(limits[2]), iter(start) {}
 
 bool Range::operator==(const Range& other) const
 {
