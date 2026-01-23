@@ -83,7 +83,7 @@ String::String(const std::string& str) :
 String::String(const std::string_view& view) :
     HeapObj(OBJ_STRING), str(view) {}
 
-String::String(const char* str, size_t len = -1) :
+String::String(const char* str, size_t len) :
     HeapObj(OBJ_STRING)
 {
     if (len == -1) len = strlen(str);
@@ -92,7 +92,7 @@ String::String(const char* str, size_t len = -1) :
 
 Range::Range(const std::array<i64, 3>& limits) :
     HeapObj(OBJ_RANGE), start(limits[0]), stop(limits[1]),
-    step(limits[2]), iter(start) {}
+    step(limits[2]) {}
 
 bool Range::operator==(const Range& other) const
 {
