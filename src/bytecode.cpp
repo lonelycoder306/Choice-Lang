@@ -47,7 +47,7 @@ void ByteCode::loadRegConst(Object& constant, ui8 reg)
 	// Destination first.
 	addByte(reg);
 
-	if (constant.type == OBJ_INT)
+	if (IS_INT(constant))
 	{
 		if (IS_SMALL(constant.as.intVal))
 		{
@@ -55,7 +55,7 @@ void ByteCode::loadRegConst(Object& constant, ui8 reg)
 			return;
 		}
 	}
-	else if (constant.type == OBJ_DEC)
+	else if (IS_DEC(constant))
 	{
 		if (IS_SMALL(constant.as.doubleVal)
 			&& (fmod(constant.as.doubleVal, 1.0) == 0.0))
