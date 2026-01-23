@@ -39,7 +39,7 @@ Object Natives::print(Natives::iter it, ui8 args, const Token& error)
                 break;
             }
             // Slower alternative.
-            default:        FORMAT_PRINT("{}", (it + i)->printVal());
+            default: FORMAT_PRINT("{}", (it + i)->printVal());
         }
         if (i != args - 1)
             FORMAT_PRINT(" ");
