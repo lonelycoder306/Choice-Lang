@@ -155,7 +155,7 @@ Object::Object(T val)
     else if constexpr (std::is_same_v<T, HeapObj*>)
     {
         type = val->type;
-        val->refCount = 1;
+        val->refCount++;
         this->as.heapVal = val;
     }
 }
