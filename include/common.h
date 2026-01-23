@@ -10,15 +10,6 @@
 
 #define FALLTHROUGH() [[fallthrough]]
 
-#if defined(__cpp_lib_unreachable) // Check for C++23 support.
-	#include <utility>
-	#define UNREACHABLE() std::unreachable()
-#elif defined(__GNUC__) || defined(__clang__)
-	#define UNREACHABLE() __builtin_unreachable()
-#elif defined(_MSC_VER)
-	#define UNREACHABLE() __assume(false)
-#endif
-
 #if defined(__cpp_lib_print) && defined(__cpp_lib_format)
 	#include <format>
 	#include <print>
@@ -39,7 +30,7 @@
 	#define COMPUTED_GOTO 0
 #endif
 
-#ifndef NDEBUG
+#if defined(DEBUG)
 	#include <cstdlib>
 	#define ASSERT(expr, msg)											\
 		do {															\
@@ -54,6 +45,22 @@
 		} while (false)
 #else
 	#define ASSERT(expr, msg)
+#endif
+
+#if defined(DEBUG)
+	#if defined(__cpp_lib_unreachable) // Check for C++23 support.
+		#include <utility>
+		#define UNREACHABLE() std::unreachable()
+	#elif defined(__GNUC__) || defined(__clang__)
+		#define UNREACHABLE() __builtin_unreachable()
+	#elif defined(_MSC_VER)
+		#define UNREACHABLE() __assume(false)
+	#endif
+#elif defined(NDEBUG)
+	#define UNREACHABLE() ASSERT(false, 		\
+		"This point should not be reachable.")
+#else
+	#define UNREACHABLE()
 #endif
 
 using i8        = int8_t;
