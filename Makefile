@@ -30,9 +30,6 @@ OBJS = $(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(SRCS))
 
 all: $(NAME)
 
-$(OBJ_DIR):
-	@mkdir -p $(OBJ_DIR)
-
 $(NAME): $(OBJS) $(REPL_LIB)
 	@$(CXX) $(CXXFLAGS) $^ $(LIBS) -o $(NAME)
 
@@ -44,6 +41,9 @@ type: $(NAME)
 
 opt: $(CXXFLAGS) += $(AST) $(OPT)
 opt: $(NAME)
+
+$(OBJ_DIR):
+	@mkdir -p $(OBJ_DIR)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp | $(OBJ_DIR)
 	@$(CXX) $(CXXFLAGS) -c $< -o $@
