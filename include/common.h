@@ -48,6 +48,9 @@
 #endif
 
 #if defined(DEBUG)
+	#define UNREACHABLE() ASSERT(false, 		\
+		"This point should not be reachable.")
+#elif defined(NDEBUG)
 	#if defined(__cpp_lib_unreachable) // Check for C++23 support.
 		#include <utility>
 		#define UNREACHABLE() std::unreachable()
@@ -56,9 +59,6 @@
 	#elif defined(_MSC_VER)
 		#define UNREACHABLE() __assume(false)
 	#endif
-#elif defined(NDEBUG)
-	#define UNREACHABLE() ASSERT(false, 		\
-		"This point should not be reachable.")
 #else
 	#define UNREACHABLE()
 #endif
