@@ -217,7 +217,6 @@ void Lexer::stringToken()
 	while ((peekChar() != '"') && !hitEnd())
 	{
 		if (peekChar() == '\n')
-			// Column value here will not be accurate.
 			throw LexError(previousChar(), line, column + 1,
 				"Incorrect syntax for multi-line string.");
 		advance();
