@@ -188,20 +188,8 @@ DEF(WhileStmt)
     continueJumps = prevContinues;
 }
 
-DEF(ForStmt)
+void ASTCompiler::forLoopHelper(UP(ForStmt)& node, ui8 varReg, ui8 iterReg)
 {
-    scope++;
-    ui8 origVarReg = previousReg;
-    varScopes.emplace_back();
-    
-    ui8 varReg = previousReg;
-    defVar(std::string(node->var.text), varReg);
-    defAccess(varReg, accessFix); // For now.
-    reserveReg();
-
-    ui8 iterReg = previousReg;
-    compileExpr(node->iter);
-
     code.addOp(OP_MAKE_ITER, varReg, iterReg);
     ui64 failJump = code.addJump(OP_JUMP); // If we fail to construct an iterator.
 
@@ -218,6 +206,8 @@ DEF(ForStmt)
 
     if (whereJump != 0)
         code.patchJump(whereJump);
+    for (ui64 jump : *continueJumps)
+        code.patchJump(jump);
 
     ui16 diff = static_cast<ui16>(code.codeSize() - loopStart + 5);
     code.addOp(OP_UPDATE_ITER, varReg, iterReg,
@@ -226,11 +216,91 @@ DEF(ForStmt)
     );
 
     code.patchJump(failJump);
+    if (node->elseClause != nullptr)
+        compileStmt(node->elseClause);
+    for (ui64 jump : *breakJumps)
+        code.patchJump(jump);
+    if (node->label.type != TOK_EOF)
+    {
+        auto* vec = this->labelsWrapper->labels.get(
+            std::string(node->label.text)
+        );
+        for (ui64 jump : *vec)
+            code.patchJump(jump);
+    }
+}
+
+DEF(ForStmt)
+{
+    scope++;
+    ui8 origVarReg = previousReg;
+    varScopes.emplace_back();
+
+    if (node->label.type != TOK_EOF)
+        this->labelsWrapper->labels.add(
+            std::string(node->label.text),
+            {}
+        );
+    
+    std::vector<ui64> breaks;
+    auto prevBreaks = breakJumps;
+    breakJumps = &breaks;
+
+    std::vector<ui64> continues;
+    auto prevContinues = continueJumps;
+    continueJumps = &continues;
+    
+    ui8 varReg = previousReg;
+    defVar(std::string(node->var.text), varReg);
+    defAccess(varReg, accessFix); // For now.
+    reserveReg();
+
+    ui8 iterReg = previousReg;
+    compileExpr(node->iter);
+
+    forLoopHelper(node, varReg, iterReg);
+
+    breakJumps = prevBreaks;
+    continueJumps = prevContinues;
 
     popScope();
     varScopes.pop_back();
     scope--;
     previousReg = origVarReg;
+}
+
+void ASTCompiler::matchCaseHelper(MatchStmt::matchCase& checkCase,
+    const ui8 matchReg, ui64& fallJump, ui64& emptyJump)
+{
+    ui8 caseReg = previousReg;
+    compileExpr(checkCase.value);
+    code.addOp(OP_EQUAL, caseReg, matchReg, caseReg);
+    ui64 falseJump = code.addJump(OP_JUMP_FALSE, caseReg);
+    freeReg();
+
+    if (fallJump != 0) // We skip condition checking during fallthrough.
+        code.patchJump(fallJump);
+    if (emptyJump != 0)
+    {
+        code.patchJump(emptyJump);
+        emptyJump = 0;
+    }
+    // We check here since compileStmt will call .release()
+    // on the unique_ptr body field, which will make it a
+    // nullptr regardless.
+    bool empty = (checkCase.body == nullptr);
+    compileStmt(checkCase.body); // Can handle empty (nullptr) body.
+
+    // If we have fallthrough, or there's already fallthrough,
+    // fall/keep falling.
+    if (checkCase.fallthrough || (fallJump != 0))
+        fallJump = code.addJump(OP_JUMP);
+    else if (empty)
+        emptyJump = code.addJump(OP_JUMP);
+    else
+        this->endJumps->push_back(code.addJump(OP_JUMP));
+
+    code.patchJump(falseJump);
 }
 
 DEF(MatchStmt)
@@ -248,37 +318,7 @@ DEF(MatchStmt)
     for (MatchStmt::matchCase& checkCase : node->cases)
     {
         if (checkCase.value != nullptr)
-        {
-            ui8 caseReg = previousReg;
-            compileExpr(checkCase.value);
-            code.addOp(OP_EQUAL, caseReg, matchReg, caseReg);
-            ui64 falseJump = code.addJump(OP_JUMP_FALSE, caseReg);
-            freeReg();
-
-            if (fallJump != 0) // We skip condition checking during fallthrough.
-                code.patchJump(fallJump);
-            if (emptyJump != 0)
-            {
-                code.patchJump(emptyJump);
-                emptyJump = 0;
-            }
-            // We check here since compileStmt will call .release()
-            // on the unique_ptr body field, which will make it a
-            // nullptr regardless.
-            bool empty = (checkCase.body == nullptr);
-            compileStmt(checkCase.body); // Can handle empty (nullptr) body.
-
-            // If we have fallthrough, or there's already fallthrough,
-            // fall/keep falling.
-            if (checkCase.fallthrough || (fallJump != 0))
-                fallJump = code.addJump(OP_JUMP);
-            else if (empty)
-                emptyJump = code.addJump(OP_JUMP);
-            else
-                jumps.push_back(code.addJump(OP_JUMP));
-
-            code.patchJump(falseJump);
-        }
+            matchCaseHelper(checkCase, matchReg, fallJump, emptyJump);
         else // Default case.
             compileStmt(checkCase.body); // No need for any jumps.
     }

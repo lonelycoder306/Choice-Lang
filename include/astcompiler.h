@@ -64,7 +64,10 @@ class ASTCompiler
 
         DECL(IfStmt);
         DECL(WhileStmt);
+        void forLoopHelper(UP(ForStmt)& node, ui8 varReg, ui8 iterReg);
         DECL(ForStmt);
+        void matchCaseHelper(MatchStmt::matchCase& checkCase, const ui8 matchReg,
+            ui64& fallJump, ui64& emptyJump);
         DECL(MatchStmt);
         DECL(RepeatStmt);
         DECL(ReturnStmt);
