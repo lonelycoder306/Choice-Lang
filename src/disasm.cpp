@@ -3,7 +3,7 @@
 #include "../include/natives.h"
 #include "../include/opcodes.h"
 
-#define PRINT_FULL_OFFSET
+#define PRINT_FULL_OFFSET 1
 
 Disassembler::Disassembler(const ByteCode& code) :
 	code(code), ip(code.block.begin()),
@@ -11,7 +11,7 @@ Disassembler::Disassembler(const ByteCode& code) :
 
 void Disassembler::printOpcode(std::string_view opName)
 {
-	#ifdef PRINT_FULL_OFFSET
+	#if PRINT_FULL_OFFSET
 		FORMAT_PRINT("{:0>4} {:<15} ", ip - start, opName);
 	#else
 		FORMAT_PRINT("{:>4} {:<15} ", ip - start, opName); // Prints leading spaces, not zeros.

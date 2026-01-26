@@ -9,8 +9,8 @@
 #include <variant>
 #include <vector>
 
-// #define WATCH_EXEC
-// #define WATCH_REG
+#define WATCH_EXEC 0
+#define WATCH_REG 0
 
 class Disassembler;
 
@@ -22,11 +22,11 @@ class VM
         static constexpr int regSize = 256;
         std::unique_ptr<Object[]> registers;
 
-        #ifdef WATCH_REG
+        #if WATCH_REG
         ui8 regSlot;
         #endif
 
-        #ifdef WATCH_EXEC
+        #if WATCH_EXEC
         Disassembler* dis;
         #endif
 
@@ -45,7 +45,7 @@ class VM
         Object unaryOper(Opcode oper);
         void handleIter(Opcode oper);
 
-        #ifdef WATCH_REG
+        #if WATCH_REG
         void printRegister();
         #endif
 

@@ -10,11 +10,11 @@ VM::VM() :
     ip(nullptr), end(nullptr),
     registers(std::make_unique<Object[]>(regSize))
 {
-    #ifdef WATCH_REG
+    #if WATCH_REG
     regSlot = 0;
     #endif
 
-    #ifdef WATCH_EXEC
+    #if WATCH_EXEC
     dis = nullptr;
     #endif
 }
@@ -267,7 +267,7 @@ void VM::handleIter(Opcode oper)
         {
             iterable = Object(iter);
             ip += 3; // Skip our fail-case jump.
-            #ifdef WATCH_EXEC
+            #if WATCH_EXEC
                 this->dis->ip += 3;
             #endif
         }
@@ -281,31 +281,32 @@ void VM::handleIter(Opcode oper)
         if (AS_ITER(iter)->next(var))
         {
             ip -= jump;
-            #ifdef WATCH_EXEC
+            #if WATCH_EXEC
                 this->dis->ip -= jump;
             #endif
         }
     }
 }
 
-#ifdef WATCH_REG
+#if WATCH_REG
 #include "../include/common.h"
 
 void VM::printRegister()
 {
-    for (int i = 0; i <= regSlot; i++)
+    ui8 i;
+    for (i = 0; i <= regSlot; i++)
     {
         if (!IS_VALID(registers[i]))
             break;
         FORMAT_PRINT("[{}]", registers[i].printVal());
     }
-    FORMAT_PRINT("\n");
+    if (i != 0) FORMAT_PRINT("\n");
 }
 
 #endif
 
 void VM::executeOp(Opcode op, const vObj& pool)
-{
+{   
     #if COMPUTED_GOTO
         static void* dispatchTable[] = {
             #define LABEL_ENABLE(op)    &&CASE_##op
@@ -317,13 +318,13 @@ void VM::executeOp(Opcode op, const vObj& pool)
             #undef LABEL
         };
 
-        #ifdef WATCH_EXEC
+        #if WATCH_EXEC
             #define DEBUG_OP(op)    dis->disassembleOp(op)
         #else
             #define DEBUG_OP(op)
         #endif
 
-        #ifdef WATCH_REG
+        #if WATCH_REG
             #define PRINT_REGS()    printRegister()
         #else
             #define PRINT_REGS()
@@ -332,6 +333,7 @@ void VM::executeOp(Opcode op, const vObj& pool)
         #define DISPATCH_OP(op)  goto *dispatchTable[op]
         #define DISPATCH()                                                          \
             do {                                                                    \
+                PRINT_REGS();                                                       \
                 if (ip >= end)                                                      \
                     return;                                                         \
                 op = static_cast<Opcode>(readByte());                               \
@@ -339,7 +341,6 @@ void VM::executeOp(Opcode op, const vObj& pool)
                     FORMAT_STR("Invalid opcode {}", static_cast<ui8>(op)));         \
                 DEBUG_OP(op);                                                       \
                 DISPATCH_OP(op);                                                    \
-                PRINT_REGS();                                                       \
             } while (false)
         #define SWITCH(op)  DISPATCH();
         #define CASE(op)    CASE_##op
@@ -357,7 +358,7 @@ void VM::executeOp(Opcode op, const vObj& pool)
         {
             ui8 dest = readByte();
             registers[dest] = loadOper(pool);
-            #ifdef WATCH_REG
+            #if WATCH_REG
             regSlot = dest;
             #endif
             DISPATCH();
@@ -366,7 +367,7 @@ void VM::executeOp(Opcode op, const vObj& pool)
         {
             ui16 jump = readShort();
             ip -= jump;
-            #ifdef WATCH_EXEC
+            #if WATCH_EXEC
                 this->dis->ip -= jump;
             #endif
             DISPATCH();
@@ -375,7 +376,7 @@ void VM::executeOp(Opcode op, const vObj& pool)
         {
             ui16 jump = readShort();
             ip += jump;
-            #ifdef WATCH_EXEC
+            #if WATCH_EXEC
                 this->dis->ip += jump;
             #endif
             DISPATCH();
@@ -387,7 +388,7 @@ void VM::executeOp(Opcode op, const vObj& pool)
             if (isTruthy(registers[check]))
             {
                 ip += jump;
-                #ifdef WATCH_EXEC
+                #if WATCH_EXEC
                     this->dis->ip += jump;
                 #endif
             }
@@ -400,7 +401,7 @@ void VM::executeOp(Opcode op, const vObj& pool)
             if (!isTruthy(registers[check]))
             {
                 ip += jump;
-                #ifdef WATCH_EXEC
+                #if WATCH_EXEC
                     this->dis->ip += jump;
                 #endif
             }
@@ -412,7 +413,7 @@ void VM::executeOp(Opcode op, const vObj& pool)
             ui8 dest = readByte();
             ui8 src = readByte();
             registers[dest] = registers[src];
-            #ifdef WATCH_REG
+            #if WATCH_REG
             regSlot = (op == OP_GET_VAR ? dest : regSlot);
             #endif
             DISPATCH();
@@ -431,7 +432,7 @@ void VM::executeOp(Opcode op, const vObj& pool)
         {
             ui8 dest = readByte();
             registers[dest] = arithOper(op);
-            #ifdef WATCH_REG
+            #if WATCH_REG
             regSlot--;
             #endif
             DISPATCH();
@@ -442,7 +443,7 @@ void VM::executeOp(Opcode op, const vObj& pool)
         {
             ui8 dest = readByte();
             registers[dest] = compareOper(op);
-            #ifdef WATCH_REG
+            #if WATCH_REG
             regSlot--;
             #endif
             DISPATCH();
@@ -454,7 +455,7 @@ void VM::executeOp(Opcode op, const vObj& pool)
         {
             ui8 dest = readByte();
             registers[dest] = bitOper(op);
-            #ifdef WATCH_REG
+            #if WATCH_REG
             regSlot--;
             #endif
             DISPATCH();
@@ -492,7 +493,7 @@ void VM::executeCode(const ByteCode& code)
     end = ip + code.block.size();
     const vObj& pool = code.pool;
 
-    #ifdef WATCH_EXEC
+    #if WATCH_EXEC
         Disassembler dis(code);
         this->dis = &dis;
     #endif
@@ -502,13 +503,13 @@ void VM::executeCode(const ByteCode& code)
         #if !COMPUTED_GOTO
             while (ip < end)
             {
-                #ifdef WATCH_EXEC
+                #if WATCH_EXEC
                     dis.disassembleOp(*ip);
                 #endif
 
                 executeOp(static_cast<Opcode>(readByte()), pool);
 
-                #ifdef WATCH_REG
+                #if WATCH_REG
                     printRegister();
                 #endif
             }
@@ -525,7 +526,7 @@ void VM::executeCode(const ByteCode& code)
         error.report();
     }
 
-    #ifdef WATCH_EXEC
+    #if WATCH_EXEC
     this->dis = nullptr;
     #endif
 }
