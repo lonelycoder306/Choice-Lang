@@ -7,7 +7,7 @@ Token::Token() :
 }
 
 Token::Token(TokenType type, std::string_view text, Value content,
-                ui16 line, ui8 position) :
+    ui16 line, ui8 position) :
     text(text), content(content), line(line),
     position(position), type(type) {}
 
