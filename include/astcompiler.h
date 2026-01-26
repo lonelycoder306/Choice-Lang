@@ -55,7 +55,7 @@ class ASTCompiler
         // Declarations.
 
         DECL(VarDecl);
-        DECL(FunDecl);
+        DECL(FuncDecl);
         DECL(ClassDecl);
 
         // Statements.

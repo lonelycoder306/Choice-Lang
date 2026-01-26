@@ -119,7 +119,7 @@ DEF(VarDecl)
         node->declType == TOK_MAKE ? accessVar : accessFix);
 }
 
-DEF(FunDecl) { (void) node; }
+DEF(FuncDecl) { (void) node; }
 DEF(ClassDecl) { (void) node; }
 
 DEF(IfStmt)
@@ -755,7 +755,7 @@ void ASTCompiler::compileStmt(StmtUP& node)
     switch (node->type)
     {
         case S_VAR_DECL:    COMPILE(VarDecl);       break;
-        case S_FUN_DECL:    COMPILE(FunDecl);       break;
+        case S_FUNC_DECL:   COMPILE(FuncDecl);      break;
         case S_CLASS_DECL:  COMPILE(ClassDecl);     break;
         case S_IF_STMT:     COMPILE(IfStmt);        break;
         case S_WHILE_STMT:  COMPILE(WhileStmt);     break;

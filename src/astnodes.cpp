@@ -7,15 +7,15 @@ using namespace AST::Expression;
 Stmt::Stmt(StmtType type) :
     type(type) {}
 
-VarDecl::VarDecl(TokenType declType, Token& name, ExprUP init) :
+VarDecl::VarDecl(TokenType declType, const Token& name, ExprUP init) :
     Stmt(S_VAR_DECL),
     declType(declType), name(name), init(std::move(init)) {}
 
-FunDecl::FunDecl(Token name, vT& params, StmtVec& body) :
-    Stmt(S_FUN_DECL),
+FuncDecl::FuncDecl(const Token& name, const vT& params, StmtVec& body) :
+    Stmt(S_FUNC_DECL),
     name(name), params(params), body(std::move(body)) {}
 
-ClassDecl::ClassDecl(Token& name, vT& fields, StmtVec& methods) :
+ClassDecl::ClassDecl(const Token& name, const vT& fields, StmtVec& methods) :
     Stmt(S_CLASS_DECL),
     name(name), fields(fields), methods(std::move(methods)) {}
 
@@ -49,7 +49,7 @@ RepeatStmt::RepeatStmt(ExprUP condition, StmtUP body) :
     Stmt(S_REPEAT_STMT),
     condition(std::move(condition)), body(std::move(body)) {}
 
-ReturnStmt::ReturnStmt(Token& keyword, ExprUP expr) :
+ReturnStmt::ReturnStmt(const Token& keyword, ExprUP expr) :
     Stmt(S_RETURN_STMT),
     keyword(keyword), expr(std::move(expr)) {}
 
@@ -76,7 +76,7 @@ BlockStmt::BlockStmt(StmtVec& block) :
 Expr::Expr(ExprType type) :
     type(type) {}
 
-AssignExpr::AssignExpr(ExprUP target, Token oper, ExprUP value) :
+AssignExpr::AssignExpr(ExprUP target, const Token& oper, ExprUP value) :
     Expr(E_ASSIGN_EXPR),
     target(std::move(target)), oper(oper), value(std::move(value)) {}
 
@@ -100,7 +100,7 @@ BinaryExpr::BinaryExpr(ExprUP left, TokenType oper, ExprUP right) :
     Expr(E_BINARY_EXPR),
     left(std::move(left)), oper(oper), right(std::move(right)) {}
 
-UnaryExpr::UnaryExpr(Token oper, ExprUP expr, bool prev) :
+UnaryExpr::UnaryExpr(const Token& oper, ExprUP expr, bool prev) :
     Expr(E_UNARY_EXPR),
     oper(oper), expr(std::move(expr)), prev(prev) {}
 
@@ -115,10 +115,10 @@ IfExpr::IfExpr(ExprUP condition, ExprUP trueExpr, ExprUP falseExpr) :
     condition(std::move(condition)), trueExpr(std::move(trueExpr)),
     falseExpr(std::move(falseExpr)) {}
 
-VarExpr::VarExpr(Token& name) :
+VarExpr::VarExpr(const Token& name) :
     Expr(E_VAR_EXPR),
     name(name) {}
 
-LiteralExpr::LiteralExpr(Token& value) :
+LiteralExpr::LiteralExpr(const Token& value) :
     Expr(E_LITERAL_EXPR),
     value(value) {}

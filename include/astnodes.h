@@ -26,7 +26,7 @@ namespace AST
         enum StmtType : ui8
         {
             S_VAR_DECL,
-            S_FUN_DECL,
+            S_FUNC_DECL,
             S_CLASS_DECL,
             S_IF_STMT,
             S_WHILE_STMT,
@@ -55,16 +55,16 @@ namespace AST
             Token name;
             ExprUP init;
 
-            VarDecl(TokenType declType, Token& name, ExprUP init);
+            VarDecl(TokenType declType, const Token& name, ExprUP init);
         };
 
-        struct FunDecl : public Stmt
+        struct FuncDecl : public Stmt
         {
             Token name;
             vT params;
             StmtVec body;
 
-            FunDecl(Token name, vT& params, StmtVec& body);
+            FuncDecl(const Token& name, const vT& params, StmtVec& body);
         };
 
         struct ClassDecl : public Stmt
@@ -73,7 +73,7 @@ namespace AST
             vT fields;
             StmtVec methods;
 
-            ClassDecl(Token& name, vT& fields, StmtVec& methods);
+            ClassDecl(const Token& name, const vT& fields, StmtVec& methods);
         };
 
         struct IfStmt : public Stmt
@@ -140,7 +140,7 @@ namespace AST
             Token keyword;
             ExprUP expr;
 
-            ReturnStmt(Token& keyword, ExprUP expr);
+            ReturnStmt(const Token& keyword, ExprUP expr);
         };
 
         struct BreakStmt : public Stmt
@@ -206,7 +206,7 @@ namespace AST
             Token oper;
             ExprUP value;
 
-            AssignExpr(ExprUP target, Token oper, ExprUP value);
+            AssignExpr(ExprUP target, const Token& oper, ExprUP value);
         };
 
         // All five are effectively the same,
@@ -267,7 +267,7 @@ namespace AST
             // decrement operators) or the new value.
             bool prev;
 
-            UnaryExpr(Token oper, ExprUP expr, bool prev);
+            UnaryExpr(const Token& oper, ExprUP expr, bool prev);
         };
 
         struct CallExpr : public Expr
@@ -294,14 +294,14 @@ namespace AST
         {
             Token name;
 
-            VarExpr(Token& name);
+            VarExpr(const Token& name);
         };
 
         struct LiteralExpr : public Expr
         {
             Token value;
 
-            LiteralExpr(Token& value);
+            LiteralExpr(const Token& value);
         };
     };
 }
