@@ -220,7 +220,21 @@ std::string Object::printVal() const
         case OBJ_DEC:   return std::to_string(AS_DEC(*this));
         case OBJ_BOOL:  return (AS_BOOL(*this) ? "true" : "false");
         case OBJ_NULL:  return "null";
-        default:        return AS_HEAP_PTR(*this)->printVal();
+        default:
+        {
+            if (IS_HEAP_OBJ(*this))
+                return AS_HEAP_PTR(*this)->printVal();
+            else
+            {
+                const auto& iter = AS_ITER(*this)->iter;
+                std::string ret;
+                std::visit([&ret](auto&& iter){
+                    ret = "->" + iter.obj->printVal();
+                }, iter);
+
+                return ret;
+            }
+        }
     }
 }
 
