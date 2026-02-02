@@ -186,7 +186,7 @@ Object::~Object()
 bool Object::operator==(const Object& other) const
 {
     if (this->type != other.type) return false;
-    
+
     switch (this->type)
     {
         case OBJ_INT:   return AS_INT(*this) == AS_INT(other);
