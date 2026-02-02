@@ -35,12 +35,17 @@ bool String::operator==(const String& other) const
     return (this->str == other.str);
 }
 
+bool String::contains(const String& substr) const
+{
+    return (strstr(substr.str.c_str(), this->str.c_str()) != nullptr);
+}
+
 std::string String::printVal() const
 {
     return str;
 }
 
-void String::emit(std::ofstream& os)
+void String::emit(std::ofstream& os) const
 {
     os.put(static_cast<char>(type));
     os.write(str.data(), str.size());
@@ -58,6 +63,20 @@ bool Range::operator==(const Range& other) const
             && (this->step == other.step));
 }
 
+bool Range::contains(const Object& num) const
+{
+    ASSERT(IS_INT(num), "Object passed with wrong type.");
+    
+    i64 val = AS_INT(num);
+    for (i64 i = start; i <= stop; i += step)
+    {
+        if (val == i)
+            return true;
+    }
+
+    return false;
+}
+
 std::string Range::printVal() const
 {
     auto retStr = FORMAT_STR("{}..{}", start, stop);
@@ -66,7 +85,7 @@ std::string Range::printVal() const
     return retStr;
 }
 
-void Range::emit(std::ofstream& os)
+void Range::emit(std::ofstream& os) const
 {
     os.put(static_cast<char>(type));
     os.write(reinterpret_cast<const char*>(&start), sizeof(i64));

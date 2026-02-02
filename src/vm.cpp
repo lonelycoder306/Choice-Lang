@@ -139,13 +139,24 @@ inline Object VM::compareOper(Opcode op)
             {
                 const String& s1 = AS_STRING(a);
                 const String& s2 = AS_STRING(b);
-                return (strstr(s2.str.c_str(), s1.str.c_str()) != nullptr);
+                return s2.contains(s1);
             }
+            else if (IS_INT(a) && IS_RANGE(b))
+            {
+                const Range& range = AS_RANGE(b);
+                return range.contains(a);
+            }
+            else if (!IS_STRING(b) && !IS_RANGE(b))
+                throw TypeMismatch(
+                    "Right operand must be an iterable object.",
+                    OBJ_ITER,
+                    b.type
+                );
             else
                 throw TypeMismatch(
                     "Left operand not matching member type of iterable object.",
-                    OBJ_STRING,
-                    (IS_STRING(a) ? b.type : a.type)
+                    (b.type == OBJ_STRING ? OBJ_STRING : OBJ_INT),
+                    a.type
                 );
         }
         default: UNREACHABLE();

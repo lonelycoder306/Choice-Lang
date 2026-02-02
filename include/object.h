@@ -45,11 +45,11 @@ struct String : public HeapObj
     String(const std::string& str);
     String(const std::string_view& view);
     String(const char* str, size_t len = -1);
-
     bool operator==(const String& other) const;
 
+    bool contains(const String& substr) const;
     std::string printVal() const;
-    void emit(std::ofstream& os);
+    void emit(std::ofstream& os) const;
 };
 
 struct Range : public HeapObj
@@ -59,11 +59,11 @@ struct Range : public HeapObj
     i64 step;
 
     Range(const std::array<i64, 3>& limits);
-
     bool operator==(const Range& other) const;
 
+    bool contains(const Object& num) const;
     std::string printVal() const;
-    void emit(std::ofstream& os);
+    void emit(std::ofstream& os) const;
 };
 
 struct List : public HeapObj
