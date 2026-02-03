@@ -5,7 +5,7 @@ INCLUDES = -Idependencies/personal \
 			-Idependencies/fmt \
 			-Idependencies/replxx -Idependencies/replxx/include
 CXX_STANDARD = -std=c++17
-DEFINES = -DFMT_HEADER_ONLY
+DEFINES = -D FMT_HEADER_ONLY # -D USE_ALLOC -D LINEAR_ALLOC
 DEBUG_FLAGS = -g -O0 -DDEBUG
 RELEASE_FLAGS = -O2 -DNDEBUG
 WARNINGS = -Wall -Wextra \
