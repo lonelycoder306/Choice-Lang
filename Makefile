@@ -1,6 +1,4 @@
 CXX = g++
-# Includes for my linear probing hash table implementation (found on GitHub),
-# as well as the libfmt and replxx libraries.
 INCLUDES = -Idependencies/personal \
 			-Idependencies/fmt \
 			-Idependencies/replxx -Idependencies/replxx/include
