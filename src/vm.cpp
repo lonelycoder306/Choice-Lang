@@ -349,7 +349,7 @@ void VM::executeOp(Opcode op, const vObj& pool)
         #define DISPATCH()  break
         #define DEFAULT     default
     #endif
-    
+
     SWITCH(op)
     {
         CASE(OP_LOAD_R):
