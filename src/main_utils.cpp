@@ -8,6 +8,7 @@
 #include "../include/utils.h"
 #include "../include/vm.h"
 #include <array>
+#include <climits> // For CHAR_BIT.
 #include <cstdio> // For stderr.
 #include <cstring>
 #include <fstream>
@@ -49,17 +50,17 @@ static inline void eofError()
 template<typename Size>
 static Size reconstructBytes(vBit& it, const vBit& end)
 {
-	Size value = 0;
-	ui8 bytes[sizeof(Size)];
-	for (size_t i = 0; i < sizeof(Size); i++)
+	ui64 value = 0;
+	size_t size = sizeof(Size);
+	for (size_t i = 0; i < size; i++)
 	{
 		if (it == end)
 			eofError();
-		bytes[i] = *(it++);
+		value = (value << CHAR_BIT) | *(it++);
 	}
 	it--;
-	std::memcpy(&value, &bytes[0], sizeof(Size));
-	return value;
+	Size* temp = reinterpret_cast<Size*>(&value);
+	return *temp;
 }
 
 static Object reconstructString(vBit& it, const vBit& end)

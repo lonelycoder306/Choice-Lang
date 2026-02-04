@@ -1,5 +1,6 @@
 #include "../include/object.h"
 #include "../include/linear_alloc.h"
+#include <climits> // For CHAR_BIT.
 #include <cstdio> // For stderr.
 #include <cstring>
 #include <string_view>
@@ -9,91 +10,6 @@ static std::string_view objTypes[] = {
     "int", "dec", "bool", "null", "bigint", "bigdec",
     "string", "range", "list", "table", "num", "iterable"
 };
-
-/* HeapObj. */
-
-HeapObj::HeapObj() :
-    type(OBJ_INVALID), refCount(0) {}
-
-HeapObj::HeapObj(ObjType type) :
-    type(type), refCount(0) {}
-
-String::String(const std::string& str) :
-    HeapObj(OBJ_STRING), str(str) {}
-
-String::String(const std::string_view& view) :
-    HeapObj(OBJ_STRING), str(view) {}
-
-String::String(const char* str, size_t len) :
-    HeapObj(OBJ_STRING)
-{
-    if (len == -1) len = strlen(str);
-    this->str = std::string(str, len);
-}
-
-bool String::operator==(const String& other) const
-{
-    return (this->str == other.str);
-}
-
-bool String::contains(const String& substr) const
-{
-    return (strstr(substr.str.c_str(), this->str.c_str()) != nullptr);
-}
-
-std::string String::printVal() const
-{
-    return str;
-}
-
-void String::emit(std::ofstream& os) const
-{
-    os.put(static_cast<char>(type));
-    os.write(str.data(), str.size());
-    os.put('\0');
-}
-
-Range::Range(const std::array<i64, 3>& limits) :
-    HeapObj(OBJ_RANGE), start(limits[0]), stop(limits[1]),
-    step(limits[2]) {}
-
-bool Range::operator==(const Range& other) const
-{
-    return ((this->start == other.start)
-            && (this->stop == other.stop)
-            && (this->step == other.step));
-}
-
-bool Range::contains(const Object& num) const
-{
-    ASSERT(IS_INT(num), "Object passed with wrong type.");
-    
-    i64 val = AS_INT(num);
-    for (i64 i = start; i <= stop; i += step)
-    {
-        if (val == i)
-            return true;
-    }
-
-    return false;
-}
-
-std::string Range::printVal() const
-{
-    auto retStr = FORMAT_STR("{}..{}", start, stop);
-    if (step != 1)
-        retStr += FORMAT_STR("..{}", step);
-    return retStr;
-}
-
-void Range::emit(std::ofstream& os) const
-{
-    os.put(static_cast<char>(type));
-    os.write(reinterpret_cast<const char*>(&start), sizeof(i64));
-    os.write(reinterpret_cast<const char*>(&stop), sizeof(i64));
-    os.write(reinterpret_cast<const char*>(&step), sizeof(i64));
-}
-
 
 /* Object. */
 
@@ -244,10 +160,14 @@ std::string Object::printType() const
 template<typename T>
 static void emitBytes(std::ofstream& os, ObjType type, T value)
 {
-    os.put(static_cast<char>(type));
-    char bytes[sizeof(value)];
-    std::memcpy(&bytes[0], &value, sizeof(value));
-    os.write(bytes, sizeof(value));
+    if (type != OBJ_INVALID)
+        os.put(static_cast<char>(type));
+    constexpr size_t size = sizeof(T);
+    ui64* asBytes = reinterpret_cast<ui64*>(&value);
+    char bytes[size];
+    for (size_t i = 0; i < size; i++)
+        bytes[i] = (*asBytes >> ((size - 1 - i) * CHAR_BIT)) & 0xff;
+    os.write(&bytes[0], size);
 }
 
 void Object::emit(std::ofstream& os) const
@@ -266,6 +186,91 @@ ObjIter* Object::makeIter()
 {
     if (!IS_ITERABLE(*this)) return nullptr;
     return ALLOC(ObjIter, ObjIterDealloc, *this);
+}
+
+
+/* HeapObj. */
+
+HeapObj::HeapObj() :
+    type(OBJ_INVALID), refCount(0) {}
+
+HeapObj::HeapObj(ObjType type) :
+    type(type), refCount(0) {}
+
+String::String(const std::string& str) :
+    HeapObj(OBJ_STRING), str(str) {}
+
+String::String(const std::string_view& view) :
+    HeapObj(OBJ_STRING), str(view) {}
+
+String::String(const char* str, size_t len) :
+    HeapObj(OBJ_STRING)
+{
+    if (len == -1) len = strlen(str);
+    this->str = std::string(str, len);
+}
+
+bool String::operator==(const String& other) const
+{
+    return (this->str == other.str);
+}
+
+bool String::contains(const String& substr) const
+{
+    return (strstr(substr.str.c_str(), this->str.c_str()) != nullptr);
+}
+
+std::string String::printVal() const
+{
+    return str;
+}
+
+void String::emit(std::ofstream& os) const
+{
+    os.put(static_cast<char>(type));
+    os.write(str.data(), str.size());
+    os.put('\0');
+}
+
+Range::Range(const std::array<i64, 3>& limits) :
+    HeapObj(OBJ_RANGE), start(limits[0]), stop(limits[1]),
+    step(limits[2]) {}
+
+bool Range::operator==(const Range& other) const
+{
+    return ((this->start == other.start)
+            && (this->stop == other.stop)
+            && (this->step == other.step));
+}
+
+bool Range::contains(const Object& num) const
+{
+    ASSERT(IS_INT(num), "Object passed with wrong type.");
+    
+    i64 val = AS_INT(num);
+    for (i64 i = start; i <= stop; i += step)
+    {
+        if (val == i)
+            return true;
+    }
+
+    return false;
+}
+
+std::string Range::printVal() const
+{
+    auto retStr = FORMAT_STR("{}..{}", start, stop);
+    if (step != 1)
+        retStr += FORMAT_STR("..{}", step);
+    return retStr;
+}
+
+void Range::emit(std::ofstream& os) const
+{
+    os.put(static_cast<char>(type));
+    emitBytes(os, OBJ_INVALID, start);
+    emitBytes(os, OBJ_INVALID, stop);
+    emitBytes(os, OBJ_INVALID, step);
 }
 
 
