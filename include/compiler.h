@@ -29,7 +29,7 @@ class Compiler
         TokCompVarsWrapper* varsWrapper;
         TokCompLoopLabels* labelsWrapper;
         std::vector<ui64> *endJumps, *breakJumps, *continueJumps;
-        bool inMatch, fall;
+        bool inMatch, inFunc, fall;
 
         // For registers.
         // Defined here for increased likelihood of inlining.

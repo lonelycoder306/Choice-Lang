@@ -37,8 +37,9 @@ Compiler::Compiler() :
     previousReg(0), scope(0),
     varsWrapper(new TokCompVarsWrapper),
     labelsWrapper(new TokCompLoopLabels),
-    inMatch(false), fall(false), endJumps(nullptr),
-    breakJumps(nullptr), continueJumps(nullptr) {}
+    inMatch(false), inFunc(false), fall(false),
+    endJumps(nullptr), breakJumps(nullptr),
+    continueJumps(nullptr) {}
 
 Compiler::~Compiler()
 {
@@ -163,6 +164,8 @@ void Compiler::declaration()
 {
     if (consumeToks(TOK_MAKE, TOK_FIX))
         varDecl();
+    else if (consumeTok(TOK_FUNC))
+        funDecl();
     else
         statement();
 }
@@ -205,6 +208,57 @@ void Compiler::varDecl()
         declType == TOK_MAKE ? accessVar : accessFix);
 }
 
+void Compiler::funDecl()
+{
+    matchError(TOK_IDENTIFIER, "Expect function name.");
+    ui8* slot = getVarSlot(previousTok);
+    if (slot != nullptr)
+    {
+        throw CompileError(previousTok, "Object '"
+            + std::string(previousTok.text)
+            + "' is already defined in this scope.");
+    }
+
+    std::string name = std::string(previousTok.text);
+    matchError(TOK_LEFT_PAREN, "Expect '(' after function name.");
+
+    ui8 varSlot = previousReg;
+    Compiler miniCompiler;
+    if (!checkTok(TOK_RIGHT_PAREN))
+    {
+        do {
+            matchError(TOK_IDENTIFIER, "Expect parameter name.");
+            ui8 reg = miniCompiler.previousReg;
+            miniCompiler.defVar(std::string(previousTok.text), reg);
+            miniCompiler.defAccess(reg, accessVar);
+            miniCompiler.reserveReg();
+        } while (consumeTok(TOK_COMMA));
+    }
+    matchError(TOK_RIGHT_PAREN, "Expect ')' to close function signature.");
+    matchError(TOK_LEFT_BRACE, "Expect '{' before function body.");
+
+    miniCompiler.inFunc = true;
+    miniCompiler.it = this->it;
+    miniCompiler.currentTok = this->currentTok;
+
+    miniCompiler.blockStmt();
+    miniCompiler.code.addOp(OP_INVALID, 0);
+    miniCompiler.code.addOp(OP_RETURN, 0);
+
+    this->it = miniCompiler.it;
+    this->previousTok = miniCompiler.previousTok;
+    this->currentTok = miniCompiler.currentTok;
+
+    ByteCode& funcCode = miniCompiler.code;
+    Object func = ALLOC(Function, ObjDealloc<Function>, name, funcCode);
+
+    code.loadRegConst(func, varSlot);
+
+    defVar(name, varSlot);
+    defAccess(varSlot, accessFix); // Temporarily.
+    reserveReg();
+}
+
 void Compiler::statement()
 {
     if (consumeTok(TOK_IF))
@@ -217,10 +271,12 @@ void Compiler::statement()
         matchStmt();
     else if (consumeTok(TOK_REPEAT))
         repeatStmt();
-    else if (consumeTok(TOK_LEFT_BRACE))
-        blockStmt();
+    else if (consumeTok(TOK_RETURN))
+        returnStmt();
     else if (consumeTok(TOK_BREAK))
         breakStmt();
+    else if (consumeTok(TOK_LEFT_BRACE))
+        blockStmt();
     else if (consumeTok(TOK_CONT))
     {
         matchError(TOK_SEMICOLON, "Expect ';' after 'continue'.");
@@ -548,6 +604,20 @@ void Compiler::repeatStmt()
     freeReg();
     code.addLoop(loopStart);
     code.patchJump(trueJump);
+}
+
+void Compiler::returnStmt()
+{
+    if (!inFunc)
+        throw CompileError(previousTok,
+            "Cannot use 'return' outside a function.");
+    ui8 reg = previousReg;
+    if (checkTok(TOK_SEMICOLON))
+        code.addOp(OP_INVALID, reg);
+    else
+        expression();
+    matchError(TOK_SEMICOLON, "Expect ';' after return statement.");
+    code.addOp(OP_RETURN, reg);
 }
 
 void Compiler::breakStmt()
@@ -912,7 +982,13 @@ void Compiler::call()
             location = static_cast<ui8>(func);
         }
         else
-            location = *(getVarSlot(funcName));
+        {
+            ui8* ptr = getVarSlot(funcName);
+            if (ptr == nullptr)
+                throw CompileError(funcName, "Undefined variable '"
+                    + std::string(funcName.text) + "'.");
+            location = *ptr;
+        }
 
         ui8 startReg = previousReg;
         ui8 argCount = 0;
@@ -928,7 +1004,12 @@ void Compiler::call()
         code.addOp(builtin ? OP_CALL_NAT : OP_CALL_DEF,
             location, startReg, argCount);
 
-        previousReg -= argCount - 1;
+        // Skip arguments.
+        // Our return value replaces the first argument.
+        if (argCount == 0)
+            reserveReg();
+        else
+            previousReg -= argCount - 1;
     }
     else
         post();
