@@ -145,7 +145,7 @@ DEF(FuncDecl)
     miniCompiler.code.addOp(OP_RETURN, 0);
 
     ByteCode& funcCode = miniCompiler.code;
-    Object func = ALLOC(Function, FuncDealloc, name, funcCode);
+    Object func = ALLOC(Function, ObjDealloc<Function>, name, funcCode);
     code.loadRegConst(func, varSlot);
 
     defVar(name, varSlot);
@@ -750,14 +750,14 @@ DEF(LiteralExpr)
 
     else if (tok.type == TOK_STR_LIT)
     {
-        Object obj = ALLOC(String, StringDealloc, GET_STR(tok));
+        Object obj = ALLOC(String, ObjDealloc<String>, GET_STR(tok));
         code.loadRegConst(obj, previousReg);
         reserveReg();
     }
 
     else if (tok.type == TOK_RANGE)
     {
-        Object obj = ALLOC(Range, RangeDealloc, constructRange(tok.text));
+        Object obj = ALLOC(Range, ObjDealloc<Range>, constructRange(tok.text));
         code.loadRegConst(obj, previousReg);
         reserveReg();
     }

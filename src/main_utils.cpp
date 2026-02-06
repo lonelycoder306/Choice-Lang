@@ -76,7 +76,7 @@ static Object reconstructString(vBit& it, const vBit& end)
 			eofError();
 	}
 
-	return Object(ALLOC(String, StringDealloc, str));
+	return Object(ALLOC(String, ObjDealloc<String>, str));
 }
 
 static Object reconstructRange(vBit& it, const vBit& end)
@@ -95,7 +95,7 @@ static Object reconstructRange(vBit& it, const vBit& end)
 	}
 
 	it--;
-	return Object(ALLOC(Range, RangeDealloc, array));
+	return Object(ALLOC(Range, ObjDealloc<Range>, array));
 }
 
 vObj reconstructPool(const vByte& poolBytes)

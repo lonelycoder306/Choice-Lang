@@ -189,7 +189,7 @@ void Object::emit(std::ofstream& os) const
 ObjIter* Object::makeIter()
 {
     if (!IS_ITERABLE(*this)) return nullptr;
-    return ALLOC(ObjIter, ObjIterDealloc, *this);
+    return ALLOC(ObjIter, ObjDealloc<ObjIter>, *this);
 }
 
 
@@ -336,7 +336,7 @@ StringIter::~StringIter()
 bool StringIter::start(Object& var)
 {
     if (obj->str.size() == 0) return false;
-    iter = ALLOC(String, StringDealloc, begin, 1);
+    iter = ALLOC(String, ObjDealloc<String>, begin, 1);
     #if !USE_ALLOC
         iter->refCount++;
     #endif
@@ -446,34 +446,6 @@ bool ObjIter::next(Object& var)
 
     return ret;
 }
-
-
-/* Deallocation functors. */
-
-void FuncDealloc::operator()(void* mem)
-{
-    Function* func = reinterpret_cast<Function*>(mem);
-    func->~Function();
-}
-
-void StringDealloc::operator()(void* mem)
-{
-    String* string = reinterpret_cast<String*>(mem);
-    string->~String();
-}
-
-void RangeDealloc::operator()(void* mem)
-{
-    Range* range = reinterpret_cast<Range*>(mem);
-    range->~Range();
-}
-
-void ObjIterDealloc::operator()(void* mem)
-{
-    ObjIter* iter = reinterpret_cast<ObjIter*>(mem);
-    iter->~ObjIter();
-}
-
 
 /* Type Mismatch Error Class.*/
 

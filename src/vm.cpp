@@ -83,7 +83,7 @@ inline Object VM::loadOper()
 inline Object VM::concatStrings(const Object& str1, const Object& str2)
 {
     std::string concat = AS_STRING(str1).str + AS_STRING(str2).str;
-    return ALLOC(String, StringDealloc, concat);
+    return ALLOC(String, ObjDealloc<String>, concat);
 }
 
 Object VM::arithOper(Opcode oper)

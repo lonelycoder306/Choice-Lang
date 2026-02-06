@@ -59,7 +59,7 @@ Object Natives::type(Natives::iter it, ui8 args, const Token& error)
             FORMAT_STR("Expected 1 argument but found {}.", args)
         );
 
-    return Object(ALLOC(String, StringDealloc, it->printType()));
+    return Object(ALLOC(String, ObjDealloc<String>, it->printType()));
 }
 
 Object Natives::clock(Natives::iter it, ui8 args, const Token& error)
@@ -95,5 +95,5 @@ Object Natives::range(Natives::iter it, ui8 args, const Token& error)
     std::array<i64, 3> limits = {AS_INT(*it), AS_INT(*(it + 1)), 1};
     if (args == 3)
         limits[2] = AS_INT(*(it + 2));
-    return Object(ALLOC(Range, RangeDealloc, limits));
+    return Object(ALLOC(Range, ObjDealloc<Range>, limits));
 }

@@ -176,12 +176,17 @@ struct ObjIter
     bool next(Object& var);
 };
 
-// Deallocation functors.
+// Deallocation functor.
 
-struct FuncDealloc      { void operator()(void* mem); };
-struct StringDealloc    { void operator()(void* mem); };
-struct RangeDealloc     { void operator()(void* mem); };
-struct ObjIterDealloc   { void operator()(void* mem); };
+template<typename ObjT>
+struct ObjDealloc
+{
+    void operator()(void* mem)
+    {
+        ObjT* obj = reinterpret_cast<ObjT*>(mem);
+        obj->~ObjT();
+    }
+};
 
 // General type mismatch error class.
 
