@@ -170,10 +170,10 @@ static void emitBytes(std::ofstream& os, ObjType type, T value)
     if (type != OBJ_INVALID)
         os.put(static_cast<char>(type));
     constexpr size_t size = sizeof(T);
-    ui64& asBytes = reinterpret_cast<ui64&>(value);
+    ui64* asBytes = reinterpret_cast<ui64*>(&value);
     char bytes[size];
     for (size_t i = 0; i < size; i++)
-        bytes[i] = (asBytes >> ((size - 1 - i) * CHAR_BIT)) & 0xff;
+        bytes[i] = (*asBytes >> ((size - 1 - i) * CHAR_BIT)) & 0xff;
     os.write(&bytes[0], size);
 }
 
