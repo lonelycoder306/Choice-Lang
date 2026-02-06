@@ -1,3 +1,5 @@
+#ifdef COMP_AST
+
 #include "../include/astnodes.h"
 using namespace AST::Statement;
 using namespace AST::Expression;
@@ -122,3 +124,5 @@ VarExpr::VarExpr(const Token& name) :
 LiteralExpr::LiteralExpr(const Token& value) :
     Expr(E_LITERAL_EXPR),
     value(value) {}
+
+#endif
