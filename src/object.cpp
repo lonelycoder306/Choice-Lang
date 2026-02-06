@@ -111,6 +111,7 @@ bool Object::operator==(const Object& other) const
         case OBJ_DEC:       return AS_DEC(*this) == AS_DEC(other);
         case OBJ_BOOL:      return AS_BOOL(*this) == AS_BOOL(other);
         case OBJ_NULL:      return true;
+        case OBJ_FUNC:      return AS_FUNC(*this) == AS_FUNC(other);
         case OBJ_STRING:    return AS_STRING(*this) == AS_STRING(other);
         case OBJ_RANGE:     return AS_RANGE(*this) == AS_RANGE(other);
         default: UNREACHABLE();
@@ -169,10 +170,10 @@ static void emitBytes(std::ofstream& os, ObjType type, T value)
     if (type != OBJ_INVALID)
         os.put(static_cast<char>(type));
     constexpr size_t size = sizeof(T);
-    ui64* asBytes = reinterpret_cast<ui64*>(&value);
+    ui64& asBytes = reinterpret_cast<ui64&>(value);
     char bytes[size];
     for (size_t i = 0; i < size; i++)
-        bytes[i] = (*asBytes >> ((size - 1 - i) * CHAR_BIT)) & 0xff;
+        bytes[i] = (asBytes >> ((size - 1 - i) * CHAR_BIT)) & 0xff;
     os.write(&bytes[0], size);
 }
 
@@ -182,6 +183,7 @@ void Object::emit(std::ofstream& os) const
     {
         case OBJ_INT:       emitBytes(os, OBJ_INT, AS_INT(*this));  break;
         case OBJ_DEC:       emitBytes(os, OBJ_DEC, AS_DEC(*this));  break;
+        case OBJ_FUNC:      AS_FUNC(*this).emit(os);                break;
         case OBJ_STRING:    AS_STRING(*this).emit(os);              break;
         case OBJ_RANGE:     AS_RANGE(*this).emit(os);               break;
         default: break;
@@ -205,6 +207,29 @@ HeapObj::HeapObj(ObjType type) :
 
 Function::Function(const std::string& name, const ByteCode& code) :
     HeapObj(OBJ_FUNC), name(name), code(code) {}
+
+bool Function::operator==(const Function& other) const
+{
+    return (this == &other);
+}
+
+void Function::emit(std::ofstream& os) const
+{
+    os.put(static_cast<char>(type));
+    os.write(name.data(), name.size());
+    os.put('\0');
+
+    const vByte& block = code.block;
+    emitBytes<ui64>(os, OBJ_INVALID, block.size());
+    emitBytes<ui64>(os, OBJ_INVALID, code.countPool());
+    os.write(reinterpret_cast<const char*>(block.data()),
+		block.size());
+
+	// Constant pool.
+    const vObj& pool = code.pool;
+	for (const Object& constant : pool)
+		constant.emit(os);
+}
 
 String::String(const std::string& str) :
     HeapObj(OBJ_STRING), str(str) {}

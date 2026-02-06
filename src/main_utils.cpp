@@ -11,6 +11,7 @@
 #include <climits> // For CHAR_BIT.
 #include <cstdio> // For stderr.
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -63,6 +64,50 @@ static Size reconstructBytes(vBit& it, const vBit& end)
 	return *temp;
 }
 
+static ByteCode reconstructByteCode(vBit& it, const vBit& end)
+{
+	ui64 codeSize = reconstructBytes<ui64>(it, end);
+	it++;
+	ui64 poolSize = reconstructBytes<ui64>(it, end);
+	it++;
+
+	vByte bytes(codeSize);
+	for (ui64 i = 0; i < codeSize; i++)
+	{
+		if (it == end)
+			eofError();
+		bytes[i] = *(it++);
+	}
+
+	vByte pool(poolSize);
+	for (ui64 i = 0; i < poolSize; i++)
+	{
+		if (it == end)
+			eofError();
+		pool[i] = *(it++);
+	}
+	it--;
+
+	return ByteCode(bytes, reconstructPool(pool));
+}
+
+static Object reconstructFunc(vBit& it, const vBit& end)
+{
+	if (it == end)
+		eofError();
+	std::string name;
+	while (static_cast<char>(*it) != '\0')
+	{
+		name.push_back(static_cast<char>(*it));
+		it++;
+		if (it == end)
+			eofError();
+	}
+
+	return Object(ALLOC(Function, ObjDealloc<Function>, name,
+		reconstructByteCode(++it, end)));
+}
+
 static Object reconstructString(vBit& it, const vBit& end)
 {
 	if (it == end)
@@ -112,6 +157,9 @@ vObj reconstructPool(const vByte& poolBytes)
 				break;
 			case OBJ_DEC:
 				pool.push_back(reconstructBytes<double>(++it, poolBytes.end()));
+				break;
+			case OBJ_FUNC:
+				pool.push_back(reconstructFunc(++it, poolBytes.end()));
 				break;
 			case OBJ_STRING:
 				pool.push_back(reconstructString(++it, poolBytes.end()));
@@ -224,12 +272,9 @@ void optionShowBytes(const ByteCode& chunk)
 
 void optionCacheBytes(const ByteCode& chunk, const char* fileName)
 {
-	std::string outFile(fileName);
-	// Cut off extension.
-	outFile = outFile.substr(0, outFile.size() - 3);
-	// Add new extension.
-	outFile += ".bch";
-	std::ofstream cacheFile(outFile, std::ios::binary);
+	std::filesystem::path filePath(fileName);
+	filePath.replace_extension(".bch");
+	std::ofstream cacheFile(filePath.filename().c_str(), std::ios::binary);
 	chunk.cacheStream(cacheFile);
 }
 

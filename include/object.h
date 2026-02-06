@@ -47,6 +47,9 @@ struct Function : public HeapObj
 
     Function() = default;
     Function(const std::string& name, const ByteCode& code);
+    bool operator==(const Function& other) const;
+
+    void emit(std::ofstream& os) const;
 };
 
 struct String : public HeapObj

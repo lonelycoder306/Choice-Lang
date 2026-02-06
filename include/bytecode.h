@@ -5,6 +5,7 @@
 #include <vector>
 
 class Disassembler;
+struct Function;
 class Object;
 class VM;
 
@@ -36,8 +37,8 @@ class ByteCode
         // fitting all register values.
         ui64 addJump(Opcode op, i16 reg = -1);
         void patchJump(ui64 offset);
-        inline ui64 codeSize() { return static_cast<ui64>(block.size()); }
-        inline ui64 getLoopStart() { return codeSize(); }
+        inline ui64 codeSize() const { return static_cast<ui64>(block.size()); }
+        inline ui64 getLoopStart() const { return codeSize(); }
         void addLoop(ui64 start);
 
         void cacheStream(std::ofstream& os) const;
@@ -45,8 +46,9 @@ class ByteCode
         void clearPool();
         void clear();
 
-        friend class VM;
         friend class Disassembler;
+        friend struct Function;
+        friend class VM;
 };
 
 template<typename... Bytes>
