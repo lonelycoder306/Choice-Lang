@@ -34,10 +34,10 @@ inline void* alignMem(void* mem, size_t align)
 
 struct AllocPair
 {
-    using DeallocFn = std::function<void(void*)>;
+    using DeallocObj = std::function<void(void*)>;
 
     void*       obj;
-    DeallocFn   func;
+    DeallocObj  func;
 
     ~AllocPair() = default;
     void clean() { if (obj != nullptr) func(obj); }
