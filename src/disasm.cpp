@@ -7,7 +7,8 @@
 
 Disassembler::Disassembler(const ByteCode& code) :
 	code(code), ip(code.block.begin()),
-	start(code.block.begin()) {}
+	start(code.block.begin()), topLevel(true),
+	inVM(true) {}
 
 void Disassembler::printOpcode(std::string_view opName)
 {
@@ -18,10 +19,21 @@ void Disassembler::printOpcode(std::string_view opName)
 	#endif
 }
 
+void Disassembler::disFunction(const Function& func)
+{
+	FORMAT_PRINT("===== [start] func {} =====\n", func.name);
+	Disassembler miniDis(func.code);
+	miniDis.topLevel = false;
+	miniDis.disassembleCode();
+	FORMAT_PRINT("===== [end] func {} =====\n", func.name);
+}
+
 void Disassembler::printOperValue(const Object& oper)
 {
 	FORMAT_PRINT("'{}' {}\n",
 		oper.printVal(), oper.printType());
+	if (IS_FUNC(oper) && !inVM)
+		disFunction(AS_FUNC(oper));
 }
 
 ui8 Disassembler::restoreByte()
@@ -130,23 +142,32 @@ void Disassembler::jumpOper(ui8 byte, int sign)
 	FORMAT_PRINT("-> {}\n", ip - start + (sign * jump));
 }
 
-void Disassembler::callOper(std::string_view opName)
+void Disassembler::callOper(std::string_view opName, bool builtin)
 {
 	printOpcode(opName);
-	
-	// For now only handling built-in functions.
 
 	ui8 callee = restoreByte();
-	std::string_view func = Natives::funcNames[callee];
 	ip++;
-
 	ui8 start = restoreByte();
 	ip++;
-
 	ui8 count = restoreByte();
 	ip += 2;
 
-	FORMAT_PRINT("'{}' ({}) R[{}]\n", func, count, start);
+	if (builtin)
+	{
+		std::string_view func = Natives::funcNames[callee];
+		FORMAT_PRINT("'{}' ({}) R[{}]\n", func, count, start);
+	}
+	else
+	{
+		// We only save the register that the function object
+		// will be in by the time it is called.
+		// Since registers and their contents are only available
+		// at runtime, we cannot display any information about the
+		// function besides its expected location when only
+		// disassembling bytecode.
+		FORMAT_PRINT("F[{}] ({}) R[{}]\n", callee, count, start);
+	}
 }
 
 void Disassembler::iterOper(ui8 byte)
@@ -188,9 +209,15 @@ void Disassembler::disassembleOp(ui8 byte)
 		case OP_MAKE_ITER:	case OP_UPDATE_ITER:
 			iterOper(byte);
 			break;
-		case OP_LOAD_R: 	loadOper("OP_LOAD_R");  	break;
-		case OP_CALL_NAT:	callOper(opNames[byte]);	break;
-		case OP_RETURN:		singleOper("OP_RETURN");	break;
+		case OP_CALL_NAT:	case OP_CALL_DEF:
+			callOper(opNames[byte], (byte == OP_CALL_NAT));
+			break;
+		case OP_RETURN:		case OP_INVALID:
+			singleOper(opNames[byte]);
+			break;
+		case OP_LOAD_R:
+			loadOper("OP_LOAD_R");
+			break;
 		default:
 		{
 			FORMAT_PRINT("{:0>4} UNKNOWN OPCODE {}\n",
@@ -203,15 +230,20 @@ void Disassembler::disassembleOp(ui8 byte)
 
 void Disassembler::disassembleCode()
 {
+	inVM = false;
 	auto end = code.block.end();
-	if ((file != "") && (ip < end)) // ip < end -> We have some bytecode to print.
-		FORMAT_PRINT("=== CODE [{}] ===\n", file);
-	FORMAT_PRINT("Bytes: {}\n", code.block.size());
+	if (topLevel)
+	{
+		if ((file != "") && (ip < end)) // ip < end -> We have some bytecode to print.
+			FORMAT_PRINT("=== CODE [{}] ===\n", file);
+		FORMAT_PRINT("Bytes: {}\n", code.block.size());
+	}
 	int opers = 0;
 	while (ip < end)
 	{
 		disassembleOp(*ip);
 		opers++;
 	}
-	FORMAT_PRINT("Instructions: {}\n", opers);
+	if (topLevel)
+		FORMAT_PRINT("Instructions: {}\n", opers);
 }
