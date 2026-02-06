@@ -96,9 +96,23 @@ DEF(VarDecl)
     ui8* slot = getVarSlot(node->name);
     if (slot != nullptr)
     {
-        throw CompileError(node->name, "Variable '"
-            + std::string(node->name.text)
-            + "' is already defined in this scope.");
+        #if ALLOW_REDEFS
+            ui8 varSlot = *slot;
+            ui8 reg = previousReg;
+            if (node->init)
+            {
+                compileExpr(node->init);
+                code.addOp(OP_SET_VAR, varSlot, reg);
+            }
+            else
+                code.loadReg(varSlot, OP_NULL);
+            return;
+            
+        #else
+            throw CompileError(node->name, "Variable '"
+                + std::string(node->name.text)
+                + "' is already defined in this scope.");
+        #endif
     }
     
     ui8 varSlot = previousReg;
@@ -127,14 +141,19 @@ DEF(VarDecl)
 DEF(FuncDecl)
 {
     ui8* slot = getVarSlot(node->name);
+    bool redefined = false;
     if (slot != nullptr)
     {
-        throw CompileError(node->name, "Object '"
-            + std::string(node->name.text)
-            + "' is already defined in this scope.");
+        #if ALLOW_REDEFS
+            redefined = true;
+        #else
+            throw CompileError(node->name, "Object '"
+                + std::string(node->name.text)
+                + "' is already defined in this scope.");
+        #endif
     }
 
-    ui8 varSlot = previousReg;
+    ui8 varSlot = (redefined ? *slot : previousReg);
     std::string name = std::string(node->name.text);
     ASTCompiler miniCompiler;
     for (Token& param : node->params)
@@ -150,6 +169,13 @@ DEF(FuncDecl)
 
     ByteCode& funcCode = miniCompiler.code;
     Object func = ALLOC(Function, ObjDealloc<Function>, name, funcCode);
+
+    if (redefined)
+    {
+        code.loadRegConst(func, varSlot);
+        return;
+    }
+
     code.loadRegConst(func, varSlot);
 
     defVar(name, varSlot);

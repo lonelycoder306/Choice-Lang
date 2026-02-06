@@ -10,6 +10,8 @@
 using namespace AST::Statement;
 using namespace AST::Expression;
 
+#define ALLOW_REDEFS 1
+
 // Using PIMPL idiom.
 class ASTCompVarsWrapper;
 class ASTCompLoopLabels;
