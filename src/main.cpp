@@ -122,17 +122,18 @@ static bool cacheOptimize(ArgvOption option)
 	using std::filesystem::exists;
 	using std::filesystem::last_write_time;
 
+	std::filesystem::path cache(file);
+	cache.replace_extension(".bch");
+
 	if (exists(file))
 	{
-		std::string cached = 
-			file.substr(0, file.size() - 3) + ".bch";
-		if (exists(cached) &&
-			(last_write_time(cached) >= last_write_time(file)))
+		if (exists(cache) &&
+			(last_write_time(cache) >= last_write_time(file)))
 		{
 			if (option == CACHE_BYTECODE)
 				return true; // Nothing to do.
 			
-			std::ifstream code(cached);
+			std::ifstream code(cache);
 			ByteCode chunk = readCache(code);
 
 			if (option == EMIT_BYTECODE)
