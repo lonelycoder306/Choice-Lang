@@ -122,14 +122,22 @@ bool Object::operator>(const Object& other) const
 {
     if (IS_NUM(*this) && IS_NUM(other))
         return AS_NUM(*this) > AS_NUM(other);
-    return false;
+    throw TypeMismatch(
+        "Cannot compare non-numeric values.",
+        OBJ_NUM,
+        IS_NUM(*this) ? other.type : this->type
+    );
 }
 
 bool Object::operator<(const Object& other) const
 {
     if (IS_NUM(*this) && IS_NUM(other))
         return AS_NUM(*this) < AS_NUM(other);
-    return false;
+    throw TypeMismatch(
+        "Cannot compare non-numeric values.",
+        OBJ_NUM,
+        IS_NUM(*this) ? other.type : this->type
+    );
 }
 
 std::string Object::printVal() const
