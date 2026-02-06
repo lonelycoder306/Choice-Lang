@@ -64,6 +64,7 @@ enum Opcode : ui8 // Each opcode is a single byte.
 	OP_CALL_NAT,	// Call a native/built-in function.
 	OP_CALL_DEF,	// Call a user-defined function.
 	OP_RETURN,		// Return a value.
+	OP_INVALID,		// Load an invalid (void) return value.
 
 	// Loop specifics.
 
@@ -102,7 +103,7 @@ static std::string_view opNames[] = {
     "OP_BIT_AND", "OP_BIT_OR", "OP_BIT_COMP", "OP_BIT_XOR",
     "OP_BIT_SHIFT_R", "OP_BIT_SHIFT_L",
 
-	"OP_CALL_NAT", "OP_CALL_DEF", "OP_RETURN",
+	"OP_CALL_NAT", "OP_CALL_DEF", "OP_RETURN", "OP_INVALID",
 
 	"OP_MAKE_ITER", "OP_UPDATE_ITER",
 
