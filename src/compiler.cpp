@@ -261,7 +261,7 @@ void Compiler::funDecl()
     miniCompiler.currentTok = this->currentTok;
 
     miniCompiler.blockStmt();
-    miniCompiler.code.addOp(OP_INVALID, 0);
+    miniCompiler.code.addOp(OP_VOID, 0);
     miniCompiler.code.addOp(OP_RETURN, 0);
 
     this->it = miniCompiler.it;
@@ -638,7 +638,7 @@ void Compiler::returnStmt()
             "Cannot use 'return' outside a function.");
     ui8 reg = previousReg;
     if (checkTok(TOK_SEMICOLON))
-        code.addOp(OP_INVALID, reg);
+        code.addOp(OP_VOID, reg);
     else
         expression();
     matchError(TOK_SEMICOLON, "Expect ';' after return statement.");

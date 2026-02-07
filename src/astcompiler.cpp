@@ -161,7 +161,7 @@ DEF(FuncDecl)
         miniCompiler.reserveReg();
     }
     miniCompiler.compileStmt(node->body);
-    miniCompiler.code.addOp(OP_INVALID, 0);
+    miniCompiler.code.addOp(OP_VOID, 0);
     miniCompiler.code.addOp(OP_RETURN, 0);
 
     ByteCode& funcCode = miniCompiler.code;
@@ -408,7 +408,7 @@ DEF(ReturnStmt)
     if (node->expr != nullptr)
         compileExpr(node->expr);
     else
-        code.addOp(OP_INVALID, reg);
+        code.addOp(OP_VOID, reg);
     code.addOp(OP_RETURN, reg);
 }
 

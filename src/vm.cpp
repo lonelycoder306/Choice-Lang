@@ -550,7 +550,7 @@ void VM::executeOp(Opcode op)
             contexts.pop();
             DISPATCH();
         }
-        CASE(OP_INVALID):
+        CASE(OP_VOID):
         {
             ui8 dest = readByte();
             registers[dest] = Object();
