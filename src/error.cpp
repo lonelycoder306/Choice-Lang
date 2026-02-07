@@ -15,7 +15,7 @@ LexError::LexError(char c, ui16 line, ui8 position,
 
 void LexError::report()
 {
-    if ((errorChar == 0) || (errorChar == (char) EOF))
+    if (errorChar == (char) EOF)
         FORMAT_PRINT(stderr, "Scan Error at line end [{}]: {}\n",
             line, message);
     else

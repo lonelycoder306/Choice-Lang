@@ -223,7 +223,7 @@ void Lexer::stringToken()
 	}
 
 	if (hitEnd())
-		throw LexError('\0', line, 0, "Unterminated string."); // Column is irrelevant.
+		throw LexError(EOF, line, 0, "Unterminated string."); // Column is irrelevant.
 
 	advance(); // Consume final ".
 	makeToken(TOK_STR_LIT);
@@ -239,7 +239,7 @@ void Lexer::multiStringToken()
 		advance();
 
 	if (hitEnd())
-		throw LexError('\0', line, 0, // Column is irrelevant.
+		throw LexError(EOF, line, 0, // Column is irrelevant.
 			"Unterminated multi-line string.");
 
 	advance(); // Consume final `.
@@ -449,7 +449,7 @@ void Lexer::singleToken()
 			while ((peekChar() != '#') && !hitEnd())
 				advance();
 			if (hitEnd())
-				throw LexError('\0', line, 0, "Unterminated comment.");
+				throw LexError(EOF, line, 0, "Unterminated comment.");
 			advance();
 			break;
 		}
