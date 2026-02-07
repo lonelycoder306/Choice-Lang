@@ -319,6 +319,7 @@ inline void Lexer::conditionalToken(char c, TokenType two, TokenType one)
 
 void Lexer::singleToken()
 {
+	start = current;
 	char c = advance();
 	
 	switch (c)
@@ -484,18 +485,10 @@ vT& Lexer::tokenize(std::string_view code)
 {
 	setUp(code);
 	
-	// Consider placing the try-catch block inside
-	// the while-loop so that the lexer continues to
-	// try scanning the source code instead of halting
-	// at the first error.
-	
 	try
 	{
 		while (!hitEnd())
-		{
-			start = current;
 			singleToken();
-		}
 	}
 	catch (LexError& error)
 	{
