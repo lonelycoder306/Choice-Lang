@@ -4,11 +4,19 @@
 #include <string>
 #include <vector>
 
+/* Macros. */
+
+// Version number.
+
 #define VERSION_MAJOR   0
 #define VERSION_MINOR   0
 #define VERSION_PATCH   1
 
+// Fallthrough.
+
 #define FALLTHROUGH() [[fallthrough]]
+
+// Format printing and string-building.
 
 #if defined(__cpp_lib_print) && defined(__cpp_lib_format)
 	#include <format>
@@ -24,11 +32,15 @@
 	#define FORMAT_STR		fmt::format
 #endif
 
+// Goto usage.
+
 #if defined(__GNUC__) || defined(__clang__)
 	#define COMPUTED_GOTO 1
 #elif defined(_MSC_VER)
 	#define COMPUTED_GOTO 0
 #endif
+
+// Assert macro.
 
 #if defined(DEBUG)
 	#include <cstdlib>
@@ -47,24 +59,28 @@
 	#define ASSERT(expr, msg)
 #endif
 
+// Allocation approach and assertions.
+
 #if USE_ALLOC
 	#define ALLOC(type, dealloc, ...) allocator.alloc<type, dealloc>(__VA_ARGS__)
+
+	#define ASSERT_MEM(expr, msg, arena)								\
+		do {															\
+			if (expr)													\
+				break;													\
+			else														\
+			{															\
+				FORMAT_PRINT("ASSERTION FAILED [{}: {}, {}]: {}.\n",    \
+					(__FILE__), (__func__), (__LINE__), msg);			\
+				free(arena);                                            \
+				exit(EXIT_FAILURE);										\
+			}															\
+		} while (false)
 #else
 	#define ALLOC(type, dealloc, ...) new type(__VA_ARGS__)
 #endif
 
-#define ASSERT_MEM(expr, msg, arena)								\
-    do {															\
-        if (expr)													\
-            break;													\
-        else														\
-        {															\
-            FORMAT_PRINT("ASSERTION FAILED [{}: {}, {}]: {}.\n",    \
-                (__FILE__), (__func__), (__LINE__), msg);			\
-            free(arena);                                            \
-            exit(EXIT_FAILURE);										\
-        }															\
-    } while (false)
+// Unreachable points.
 
 #if defined(DEBUG)
 	#define UNREACHABLE() ASSERT(false, 		\
@@ -81,6 +97,8 @@
 #else
 	#define UNREACHABLE()
 #endif
+
+/* Type aliases. */
 
 using i8        = int8_t;
 using i16       = int16_t;
@@ -100,6 +118,8 @@ using vT    	= std::vector<Token>;
 using vByte 	= std::vector<ui8>;
 using vObj  	= std::vector<Object>;
 using vBit		= vByte::const_iterator;
+
+// Global variables.
 
 // Whether we're running an externally loaded
 // program or not.
