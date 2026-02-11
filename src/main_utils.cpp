@@ -55,8 +55,7 @@ static Size reconstructBytes(vBit& it, const vBit& end)
 	size_t size = sizeof(Size);
 	for (size_t i = 0; i < size; i++)
 	{
-		if (it == end)
-			eofError();
+		CHECK_EOF();
 		value = (value << CHAR_BIT) | *(it++);
 	}
 	it--;
@@ -74,16 +73,14 @@ static ByteCode reconstructByteCode(vBit& it, const vBit& end)
 	vByte bytes(codeSize);
 	for (ui64 i = 0; i < codeSize; i++)
 	{
-		if (it == end)
-			eofError();
+		CHECK_EOF();
 		bytes[i] = *(it++);
 	}
 
 	vByte pool(poolSize);
 	for (ui64 i = 0; i < poolSize; i++)
 	{
-		if (it == end)
-			eofError();
+		CHECK_EOF();
 		pool[i] = *(it++);
 	}
 	it--;
@@ -93,15 +90,13 @@ static ByteCode reconstructByteCode(vBit& it, const vBit& end)
 
 static Object reconstructFunc(vBit& it, const vBit& end)
 {
-	if (it == end)
-		eofError();
+	CHECK_EOF();
 	std::string name;
 	while (static_cast<char>(*it) != '\0')
 	{
 		name.push_back(static_cast<char>(*it));
 		it++;
-		if (it == end)
-			eofError();
+		CHECK_EOF();
 	}
 
 	return Object(ALLOC(Function, ObjDealloc<Function>, name,
@@ -110,15 +105,13 @@ static Object reconstructFunc(vBit& it, const vBit& end)
 
 static Object reconstructString(vBit& it, const vBit& end)
 {
-	if (it == end)
-		eofError();
+	CHECK_EOF();
 	std::string str;
 	while (static_cast<char>(*it) != '\0')
 	{
 		str.push_back(static_cast<char>(*it));
 		it++;
-		if (it == end)
-			eofError();
+		CHECK_EOF();
 	}
 
 	return Object(ALLOC(String, ObjDealloc<String>, str));
@@ -129,8 +122,7 @@ static Object reconstructRange(vBit& it, const vBit& end)
 	std::array<i64, 3> array;
 	for (int i = 0; i < 3; i++)
 	{
-		if (it == end)
-			eofError();
+		CHECK_EOF();
 		array[i] = reconstructBytes<i64>(it, end);
 		// reconstructBytes decrements the iterator once done
 		// to account for the extra increment for the last loop

@@ -7,6 +7,16 @@
 #include <vector>
 #include <memory>
 
+#ifdef DEBUG
+    #define CHECK_EOF()     \
+        do {                \
+            if (it == end)  \
+			    eofError(); \
+        } while (false)
+#else
+    #define CHECK_EOF()
+#endif
+
 std::string readFile(const char* fileName);
 vObj reconstructPool(const vByte& poolBytes);
 ByteCode readCache(std::ifstream& fileIn);
