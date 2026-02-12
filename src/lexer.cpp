@@ -23,7 +23,8 @@ static std::unordered_map<std::string_view, TokenType> keywords = {
 
 Lexer::Lexer() :
 	start(nullptr), current(nullptr), end(nullptr),
-	line(1), column(1), state({false, 0}), hitError(false) {}
+	line(1), column(1), state({false, 0}), hitError(false),
+	errorCount(0) {}
 
 inline void Lexer::setUp(const std::string_view& code)
 {
@@ -307,9 +308,15 @@ bool Lexer::checkHyperComment()
 		else
 		{
 			// Must report manually since we return a value below.
-			LexError(peekChar(), line, column + 1,
-				"Unterminated nested comment.").report();
 			hitError = true;
+			if (errorCount < COMPILE_ERROR_MAX)
+			{
+				LexError(peekChar(), line, column + 1,
+				"Unterminated nested comment.").report();
+			}
+			else if (errorCount == COMPILE_ERROR_MAX)
+				FORMAT_PRINT("SCANNING ERROR MAXIMUM REACHED.\n");
+			errorCount++;
 		}
 		return true;
 	}

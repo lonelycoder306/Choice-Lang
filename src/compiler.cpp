@@ -40,7 +40,8 @@ Compiler::Compiler() :
     endJumps(nullptr), breakJumps(nullptr),
     continueJumps(nullptr), inMatch(false),
     inFunc(false), fall(false), syntaxError(false),
-    semanticError(false), hitError(false) {}
+    semanticError(false), hitError(false),
+    errorCount(0) {}
 
 Compiler::~Compiler()
 {
@@ -126,11 +127,15 @@ inline bool Compiler::matchError(TokenType type, std::string_view message)
     if (!consumeTok(type))
     {
         hitError = true;
-        if (!semanticError)
+        if (!syntaxError && (errorCount < COMPILE_ERROR_MAX))
         {
             CompileError(currentTok, std::string(message)).report();
-            semanticError = true;
+            syntaxError = true;
+            errorCount++;
         }
+        else if (errorCount == COMPILE_ERROR_MAX)
+            FORMAT_PRINT("COMPILATION ERROR MAXIMUM REACHED.\n");
+        errorCount++;
         return false;
     }
 
@@ -219,8 +224,7 @@ void Compiler::declaration()
     if (syntaxError || semanticError)
     {
         reset();
-        syntaxError = false;
-        semanticError = false;
+        syntaxError = semanticError = false;
     }
 }
 
@@ -573,10 +577,11 @@ ui64 Compiler::matchCaseHelper(const ui8 matchReg, ui64& fallJump,
     {
         // Must report manually since function is not void.
         hitError = true;
-        if (!semanticError)
+        if (!semanticError && (errorCount < COMPILE_ERROR_MAX))
         {
             CompileError(errorToken, "Case value must be a literal.").report();
             semanticError = true;
+            errorCount++;
         }
         return UINT64_MAX;
     }
@@ -1225,6 +1230,7 @@ ByteCode& Compiler::compile(const vT& tokens)
     syntaxError = false;
     semanticError = false;
     hitError = false;
+    errorCount = 0;
 
     while (!checkTok(TOK_EOF))
         declaration();

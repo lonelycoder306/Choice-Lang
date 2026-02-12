@@ -29,11 +29,19 @@ class ASTCompiler
         } while (false)
 
     #undef REPORT_ERROR
-    #define REPORT_ERROR(...)                   \
-        do {                                    \
-            CompileError(__VA_ARGS__).report(); \
-            hitError = true;                    \
-            return;                             \
+    #define REPORT_ERROR(...)                                           \
+        do {                                                            \
+            hitError = true;                                            \
+            if (errorCount > COMPILE_ERROR_MAX) return;                 \
+            else if (errorCount == COMPILE_ERROR_MAX)                   \
+            {                                                           \
+                FORMAT_PRINT("COMPILATION ERROR MAXIMUM REACHED.\n");   \
+                errorCount++;                                           \
+                return;                                                 \
+            }                                                           \
+            CompileError(__VA_ARGS__).report();                         \
+            errorCount++;                                               \
+            return;                                                     \
         } while (false)
 
     #define GET_STR(tok)                                \
@@ -109,6 +117,8 @@ class ASTCompiler
         void compileStmt(StmtUP& node);
 
     public:
+        int errorCount; // So it can be modified directly.
+
         ASTCompiler();
         ~ASTCompiler();
 

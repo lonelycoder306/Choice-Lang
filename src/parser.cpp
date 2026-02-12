@@ -11,7 +11,7 @@ using namespace AST::Expression;
 Parser::Parser() :
     inMatch(false), inFunc(false), fall(false),
     syntaxError(false), semanticError(false),
-    hitError(false) {}
+    hitError(false), errorCount(0) {}
 
 void Parser::nextTok()
 {
@@ -55,11 +55,14 @@ bool Parser::matchError(TokenType type, std::string_view message)
     if (!consumeTok(type))
     {
         hitError = true;
-        if (!semanticError)
+        if (!syntaxError && (errorCount < COMPILE_ERROR_MAX))
         {
             CompileError(currentTok, std::string(message)).report();
             semanticError = true;
         }
+        else if (errorCount == COMPILE_ERROR_MAX)
+            FORMAT_PRINT("COMPILATION ERROR MAXIMUM REACHED.\n");
+        errorCount++;
         return false;
     }
 
@@ -109,11 +112,14 @@ void Parser::matchType(std::string_view message /* = "" */)
     if (!consumeType())
     {
         hitError = true;
-        if (!syntaxError)
+        if (!syntaxError && (errorCount < COMPILE_ERROR_MAX))
         {
             CompileError(currentTok, std::string(message)).report();
             syntaxError = true;
         }
+        else if (errorCount == COMPILE_ERROR_MAX)
+            FORMAT_PRINT("COMPILATION ERROR MAXIMUM REACHED.\n");
+        errorCount++;
     }
 }
 
@@ -713,6 +719,7 @@ StmtVec& Parser::parseToAST(const vT& tokens)
     currentTok = tokens[0];
     syntaxError = false;
     semanticError = false;
+    errorCount = 0;
 
     while (!checkTok(TOK_EOF))
     {

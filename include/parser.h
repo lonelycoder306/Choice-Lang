@@ -1,31 +1,50 @@
 #pragma once
 #include "astnodes.h"
+#include "common.h"
 #include "error.h"
+#include <utility>
 
 class Parser
 {
-    #undef REPORT_ERROR
-    #define REPORT_SYNTAX(...)                  \
-        do {                                    \
-            hitError = true;                    \
-            if (syntaxError) return nullptr;    \
-            CompileError(__VA_ARGS__).report(); \
-            syntaxError = true;                 \
-            return nullptr;                     \
+    #undef REPORT_SYNTAX
+    #define REPORT_SYNTAX(...)                                          \
+        do {                                                            \
+            hitError = true;                                            \
+            if (syntaxError || (errorCount > COMPILE_ERROR_MAX))        \
+                return nullptr;                                         \
+            if (errorCount == COMPILE_ERROR_MAX)                        \
+            {                                                           \
+                FORMAT_PRINT("COMPILATION ERROR MAXIMUM REACHED.\n");   \
+                errorCount++;                                           \
+                return nullptr;                                         \
+            }                                                           \
+            CompileError(__VA_ARGS__).report();                         \
+            syntaxError = true;                                         \
+            errorCount++;                                               \
+            return nullptr;                                             \
         } while (false)
 
-    #define REPORT_SEMANTIC(...)                \
-        do {                                    \
-            hitError = true;                    \
-            if (semanticError) return nullptr;  \
-            CompileError(__VA_ARGS__).report(); \
-            semanticError = true;               \
-            return nullptr;                     \
+    #undef REPORT_SEMANTIC
+    #define REPORT_SEMANTIC(...)                                        \
+        do {                                                            \
+            hitError = true;                                            \
+            if (semanticError || (errorCount > COMPILE_ERROR_MAX))      \
+                return nullptr;                                         \
+            if (errorCount == COMPILE_ERROR_MAX)                        \
+            {                                                           \
+                FORMAT_PRINT("COMPILATION ERROR MAXIMUM REACHED.\n");   \
+                errorCount++;                                           \
+                return nullptr;                                         \
+            }                                                           \
+            CompileError(__VA_ARGS__).report();                         \
+            semanticError = true;                                       \
+            errorCount++;                                               \
+            return nullptr;                                             \
         } while (false)
 
-    #define MATCH_TOK(...)                      \
+    #define MATCH_TOK(...)                              \
         if (!matchError(__VA_ARGS__)) return nullptr;
-    
+
     private:
         StmtVec program;
         Token previousTok;
@@ -92,6 +111,8 @@ class Parser
         ExprUP primary();
     
     public:
+        int errorCount; // So it can be modified directly.
+
         Parser();
         StmtVec& parseToAST(const vT& tokens);
 };

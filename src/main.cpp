@@ -105,6 +105,9 @@ static ByteCode& runCompiler(const vT& tokens)
 			// Optimize here.
 		#endif
 
+		// To not report too many errors when using an
+		// AST.
+		compiler.errorCount = parser.errorCount;
 		return compiler.compile(program);
 	#else
 		static Compiler compiler;

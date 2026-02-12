@@ -36,7 +36,8 @@ ASTCompiler::ASTCompiler() :
     varsWrapper(new ASTCompVarsWrapper),
     labelsWrapper(new ASTCompLoopLabels),
     endJumps(nullptr), breakJumps(nullptr),
-    continueJumps(nullptr) {}
+    continueJumps(nullptr), hitError(false),
+    errorCount(0) {}
 
 ASTCompiler::~ASTCompiler()
 {
@@ -847,6 +848,9 @@ void ASTCompiler::compileStmt(StmtUP& node)
 ByteCode& ASTCompiler::compile(StmtVec& program)
 {
     code.clear();
+    hitError = false;
+    // Inherit errorCount from parser.
+
     for (StmtUP& node : program)
         compileStmt(node);
 

@@ -12,11 +12,19 @@ struct ClassState
 class Lexer
 {
     #undef REPORT_ERROR
-    #define REPORT_ERROR(...)               \
-        do {                                \
-            LexError(__VA_ARGS__).report(); \
-            hitError = true;                \
-            return;                         \
+    #define REPORT_ERROR(...)                                       \
+        do {                                                        \
+            hitError = true;                                        \
+            if (errorCount > LEX_ERROR_MAX) return;                 \
+            else if (errorCount == LEX_ERROR_MAX)                   \
+            {                                                       \
+                FORMAT_PRINT("SCANNING ERROR MAXIMUM REACHED.\n");  \
+                errorCount++;                                       \
+                return;                                             \
+            }                                                       \
+            LexError(__VA_ARGS__).report();                         \
+            errorCount++;                                           \
+            return;                                                 \
         } while (false)
     
     private:
@@ -28,6 +36,7 @@ class Lexer
         ui8 column;
         ClassState state;
         bool hitError;
+        int errorCount;
 
         // Utilities.
 

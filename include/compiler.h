@@ -17,22 +17,41 @@ class TokCompLoopLabels;
 
 class Compiler
 {
-    #define REPORT_SYNTAX(...)                  \
-        do {                                    \
-            hitError = true;                    \
-            if (syntaxError) return;            \
-            CompileError(__VA_ARGS__).report(); \
-            syntaxError = true;                 \
-            return;                             \
+    // Cannot propagate returns, so we make them macros instead.
+    #undef REPORT_SYNTAX
+    #define REPORT_SYNTAX(...)                                          \
+        do {                                                            \
+            hitError = true;                                            \
+            if (syntaxError || (errorCount > COMPILE_ERROR_MAX))        \
+                return;                                                 \
+            else if (errorCount == COMPILE_ERROR_MAX)                   \
+            {                                                           \
+                FORMAT_PRINT("COMPILATION ERROR MAXIMUM REACHED.\n");   \
+                errorCount++;                                           \
+                return;                                                 \
+            }                                                           \
+            CompileError(__VA_ARGS__).report();                         \
+            syntaxError = true;                                         \
+            errorCount++;                                               \
+            return;                                                     \
         } while (false)
 
-    #define REPORT_SEMANTIC(...)                \
-        do {                                    \
-            hitError = true;                    \
-            if (semanticError) return;          \
-            CompileError(__VA_ARGS__).report(); \
-            semanticError = true;               \
-            return;                             \
+    #undef REPORT_SEMANTIC
+    #define REPORT_SEMANTIC(...)                                        \
+        do {                                                            \
+            hitError = true;                                            \
+            if (semanticError || (errorCount > COMPILE_ERROR_MAX))      \
+                return;                                                 \
+            else if (errorCount == COMPILE_ERROR_MAX)                   \
+            {                                                           \
+                FORMAT_PRINT("COMPILATION ERROR MAXIMUM REACHED.\n");   \
+                errorCount++;                                           \
+                return;                                                 \
+            }                                                           \
+            CompileError(__VA_ARGS__).report();                         \
+            semanticError = true;                                       \
+            errorCount++;                                               \
+            return;                                                     \
         } while (false)
 
     #define MATCH_TOK(...)                      \
@@ -68,6 +87,7 @@ class Compiler
         bool inMatch, inFunc, fall; // For structures.
         bool syntaxError, semanticError; // We are currently in an error state.
         bool hitError; // Some error was encountered while compiling.
+        int errorCount;
 
         // For registers.
         // Defined here for increased likelihood of inlining.
