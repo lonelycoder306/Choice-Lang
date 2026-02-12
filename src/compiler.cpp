@@ -28,7 +28,7 @@ class TokCompVarsWrapper
 class TokCompLoopLabels
 {
     public:
-        linearTable<std::string, std::vector<ui64>> labels;
+        linearTable<std::string_view, std::vector<ui64>> labels;
 
         TokCompLoopLabels() = default;
 };
@@ -421,7 +421,7 @@ void Compiler::whileLoopHelper(ui64 loopStart, ui64 falseJump)
         MATCH_TOK(TOK_IDENTIFIER, "Expect loop label after ':'.");
         label = previousTok;
         this->labelsWrapper->labels.add(
-            std::string(label.text),
+            label.text, // Will persist at least as long as compilation takes.
             {}
         );
     }
@@ -443,11 +443,13 @@ void Compiler::whileLoopHelper(ui64 loopStart, ui64 falseJump)
     if (label.type != TOK_EOF)
     {
         auto* vec = this->labelsWrapper->labels.get(
-            std::string(label.text)
+            label.text
         );
-
         for (ui64 jump : *vec)
             code.patchJump(jump);
+        this->labelsWrapper->labels.remove(
+            label.text
+        );
     }
 }
 
@@ -498,7 +500,7 @@ void Compiler::forLoopHelper(ui8 varReg, ui8 iterReg)
         MATCH_TOK(TOK_IDENTIFIER, "Expect loop label after ':'.");
         label = previousTok;
         this->labelsWrapper->labels.add(
-            std::string(label.text),
+            label.text,
             {}
         );
     }
@@ -524,10 +526,13 @@ void Compiler::forLoopHelper(ui8 varReg, ui8 iterReg)
     if (label.type != TOK_EOF)
     {
         auto* vec = this->labelsWrapper->labels.get(
-            std::string(label.text)
+            label.text
         );
         for (ui64 jump : *vec)
             code.patchJump(jump);
+        this->labelsWrapper->labels.remove(
+            label.text
+        );
     }
 }
 
@@ -719,7 +724,7 @@ void Compiler::breakStmt()
     {
         const Token& label = previousTok;
         auto* vec = this->labelsWrapper->labels.get(
-            std::string(label.text)
+            label.text
         );
 
         if (vec == nullptr)

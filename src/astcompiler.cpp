@@ -26,7 +26,7 @@ class ASTCompVarsWrapper
 class ASTCompLoopLabels
 {
     public:
-        linearTable<std::string, std::vector<ui64>> labels;
+        linearTable<std::string_view, std::vector<ui64>> labels;
 
         ASTCompLoopLabels() = default;
 };
@@ -208,7 +208,7 @@ DEF(WhileStmt)
     ui64 loopStart = code.getLoopStart();
     if (node->label.type != TOK_EOF)
         this->labelsWrapper->labels.add(
-            std::string(node->label.text),
+            node->label.text, // Will persist at least as long as compilation takes.
             {}
         );
 
@@ -239,10 +239,13 @@ DEF(WhileStmt)
     if (node->label.type != TOK_EOF)
     {
         auto* vec = this->labelsWrapper->labels.get(
-            std::string(node->label.text)
+            node->label.text
         );
         for (ui64 jump : *vec)
             code.patchJump(jump);
+        this->labelsWrapper->labels.remove(
+            node->label.text
+        );
     }
 
     breakJumps = prevBreaks;
@@ -284,10 +287,13 @@ void ASTCompiler::forLoopHelper(UP(ForStmt)& node, ui8 varReg, ui8 iterReg)
     if (node->label.type != TOK_EOF)
     {
         auto* vec = this->labelsWrapper->labels.get(
-            std::string(node->label.text)
+            node->label.text
         );
         for (ui64 jump : *vec)
             code.patchJump(jump);
+        this->labelsWrapper->labels.remove(
+            node->label.text
+        );
     }
 }
 
@@ -299,7 +305,7 @@ DEF(ForStmt)
 
     if (node->label.type != TOK_EOF)
         this->labelsWrapper->labels.add(
-            std::string(node->label.text),
+            node->label.text,
             {}
         );
     
@@ -420,7 +426,7 @@ DEF(BreakStmt)
     else
     {
         auto* vec = this->labelsWrapper->labels.get(
-            std::string(node->label.text)
+            node->label.text
         );
         if (vec == nullptr)
             REPORT_ERROR(node->label,
