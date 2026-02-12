@@ -3,16 +3,6 @@
 #include <string>
 #include <string_view>
 
-class Error
-{
-	protected:
-		std::string message;
-
-	public:
-		Error() = default;
-		Error(const std::string& message);
-};
-
 class LexError
 {
 	private:
@@ -29,10 +19,11 @@ class LexError
 		void report() const;
 };
 
-class CompileError : public Error
+class CompileError
 {
 	private:
 		Token token;
+		std::string message;
 
 	public:
 		CompileError(const Token& token, const std::string& message);
@@ -40,10 +31,11 @@ class CompileError : public Error
 		void report() const;
 };
 
-class RuntimeError : public Error
+class RuntimeError
 {
 	private:
 		Token token; // Temporarily, at least.
+		std::string message;
 
 	public:
 		RuntimeError(const Token& token, const std::string& message);
@@ -51,5 +43,5 @@ class RuntimeError : public Error
 		void report() const;
 };
 
-class TypeError : public Error {}; // For static type-checking.
-class CodeError : public Error {}; // For invalid externally-loaded byte-code.
+class TypeError; // For static type-checking.
+class CodeError; // For invalid externally-loaded byte-code.
