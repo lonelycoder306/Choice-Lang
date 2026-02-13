@@ -1,7 +1,8 @@
 #pragma once
-#include "../include/common.h"
-#include "../include/object.h"
-#include "../include/token.h"
+#include "common.h"
+#include "object.h"
+#include "token.h"
+#include "vm.h"
 #include <functional>
 #include <string_view>
 #include <unordered_map>
@@ -20,12 +21,12 @@ namespace Natives
         NUM_FUNCS
     };
 
-    Object print(iter it, ui8 args, const Token& error);
-    Object type(iter it, ui8 args, const Token& error);
-    Object clock(iter it, ui8 args, const Token& error);
-    Object range(iter it, ui8 args, const Token& error);
+    void print(iter it, ui8 args, const Token& error);
+    void type(iter it, ui8 args, const Token& error);
+    void clock(iter it, ui8 args, const Token& error);
+    void range(iter it, ui8 args, const Token& error);
 
-    extern const std::function<Object(iter, ui8,
+    extern const std::function<void(iter, ui8,
         const Token&)> functions[NUM_FUNCS];
     extern const std::string_view funcNames[NUM_FUNCS];
     extern const std::unordered_map<std::string_view, FuncType> builtins;
