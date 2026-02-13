@@ -448,7 +448,10 @@ DEF(EndStmt)
 
 DEF(ExprStmt)
 {
+    ui8 reg = previousReg;
     compileExpr(node->expr);
+    if (inRepl)
+        code.addOp(OP_PRINT_VALID, reg);
     freeReg();
 }
 

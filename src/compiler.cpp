@@ -753,7 +753,10 @@ void Compiler::blockStmt()
 
 void Compiler::exprStmt()
 {
+    ui8 reg = previousReg;
     expression();
+    if (inRepl)
+        code.addOp(OP_PRINT_VALID, reg);
     MATCH_TOK(TOK_SEMICOLON, "Expect ';' after expression.");
     freeReg();
 }

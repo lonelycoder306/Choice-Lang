@@ -43,6 +43,7 @@
 
 std::string file = "";
 bool external = false;
+bool inRepl = false;
 
 #ifdef LINEAR_ALLOC
 	#include "../include/linear_alloc.h"
@@ -191,6 +192,8 @@ static bool prelimChecks(const char* fileName, ArgvOption option)
 
 static void runFile(const char* fileName, ArgvOption option = EXECUTE)
 {
+	inRepl = false;
+
 	if (prelimChecks(fileName, option))
 		return;
 
@@ -250,7 +253,9 @@ static std::string& buildLine(std::string& line)
 }
 
 static void repl(ArgvOption option = EXECUTE)
-{
+{	
+	inRepl = true;
+
 	// All invalid options for REPL mode.
 	if (option == CACHE_BYTECODE || option == LOAD_PROGRAM ||
 		option == DIS_PROGRAM)

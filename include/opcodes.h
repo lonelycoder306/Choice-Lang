@@ -83,6 +83,7 @@ enum Opcode : ui8 // Each opcode is a single byte.
 
 	OP_LOAD_R,		// Load a constant into a register.
 	OP_MOVE_R,		// Store a register's value in another register.
+	OP_PRINT_VALID,	// Print the result of an expression, except calls to void (non-returning) functions.
 };
 
 #define IS_VALID_OP(op)	(((op) >= OP_NEG_TWO) && ((op) <= OP_MOVE_R))
@@ -110,5 +111,5 @@ static std::string_view opNames[] = {
 	"OP_JUMP", "OP_JUMP_TRUE", "OP_JUMP_FALSE", "OP_LOOP",
 	"OP_BYTE_OPER", "OP_SHORT_OPER", "OP_LONG_OPER",
 	
-	"OP_LOAD_R", "OP_MOVE_R"
+	"OP_LOAD_R", "OP_MOVE_R", "OP_PRINT_VALID"
 };

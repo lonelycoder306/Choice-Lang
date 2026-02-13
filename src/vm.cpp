@@ -513,6 +513,14 @@ void VM::executeOp(Opcode op)
             DISPATCH();
         }
 
+        CASE(OP_PRINT_VALID):
+        {
+            ui8 out = readByte();
+            const Object& obj = registers[out];
+            if (IS_VALID(obj)) FORMAT_PRINT("{}\n", obj.printVal());
+            DISPATCH();
+        }
+
         // Functions.
         CASE(OP_CALL_NAT):
         {

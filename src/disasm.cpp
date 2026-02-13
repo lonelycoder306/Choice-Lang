@@ -212,7 +212,7 @@ void Disassembler::disassembleOp(ui8 byte)
 		case OP_CALL_NAT:	case OP_CALL_DEF:
 			callOper(opNames[byte], (byte == OP_CALL_NAT));
 			break;
-		case OP_RETURN:		case OP_VOID:
+		case OP_RETURN:		case OP_VOID:	case OP_PRINT_VALID:
 			singleOper(opNames[byte]);
 			break;
 		case OP_LOAD_R:

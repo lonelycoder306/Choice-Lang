@@ -124,6 +124,7 @@ using vBit		= vByte::const_iterator;
 // Whether we're running an externally loaded
 // program or not.
 extern bool external;
+extern bool inRepl;
 extern std::string file;
 
 #ifdef LINEAR_ALLOC
