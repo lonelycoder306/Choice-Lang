@@ -120,24 +120,16 @@ bool Object::operator==(const Object& other) const
 
 bool Object::operator>(const Object& other) const
 {
-    if (IS_NUM(*this) && IS_NUM(other))
-        return AS_NUM(*this) > AS_NUM(other);
-    throw TypeMismatch(
-        "Cannot compare non-numeric values.",
-        OBJ_NUM,
-        IS_NUM(*this) ? other.type : this->type
-    );
+    ASSERT(IS_NUM(*this) && IS_NUM(other),
+        "Invalid operand types passed to operator.");
+    return AS_NUM(*this) > AS_NUM(other);
 }
 
 bool Object::operator<(const Object& other) const
 {
-    if (IS_NUM(*this) && IS_NUM(other))
-        return AS_NUM(*this) < AS_NUM(other);
-    throw TypeMismatch(
-        "Cannot compare non-numeric values.",
-        OBJ_NUM,
-        IS_NUM(*this) ? other.type : this->type
-    );
+    ASSERT(IS_NUM(*this) && IS_NUM(other),
+        "Invalid operand types passed to operator.");
+    return AS_NUM(*this) < AS_NUM(other);
 }
 
 std::string Object::printVal() const
