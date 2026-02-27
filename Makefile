@@ -68,6 +68,7 @@ clean:
 
 fclean: clean
 	@rm -f $(NAME)
+	@rm -f $(DEBUG)
 	@rm -f $(REPL_LIB)
 
 re: fclean all
