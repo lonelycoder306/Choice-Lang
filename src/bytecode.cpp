@@ -37,20 +37,16 @@ void ByteCode::addOp(Opcode op)
 	addByte(static_cast<ui8>(op));
 }
 
-void ByteCode::loadReg(ui8 reg, ui8 op)
+void ByteCode::loadReg(ui8 reg, ui8 op, ui8 offset)
 {
-	addBytes(static_cast<ui8>(OP_LOAD_R), reg, op);
+	addBytes(static_cast<ui8>(OP_LOAD_R), offset, reg, op);
 }
 
 #define IS_SMALL(val) ((-3 < (val)) && ((val) < 3))
 
-void ByteCode::loadRegConst(Object& constant, ui8 reg)
+void ByteCode::loadRegConst(Object& constant, ui8 reg, ui8 offset)
 {
-	// Must do them separately since addBytes
-	// cannot handle an opcode and a regular byte together.
-	addByte(OP_LOAD_R);
-	// Destination first.
-	addByte(reg);
+	addBytes(static_cast<ui8>(OP_LOAD_R), offset, reg); // Destination first.
 
 	if (IS_INT(constant))
 	{

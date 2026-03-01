@@ -25,12 +25,12 @@ class Disassembler
         ui16 restoreShort();
         ui32 restoreLong();
 
-        void singleOper(std::string_view opName);
-        void doubleOper(std::string_view opName);
-        void tripleOper(std::string_view opName);
-        void loadOper(std::string_view opName);
+        void singleOper(ui8 byte);
+        void doubleOper(ui8 byte);
+        void tripleOper(ui8 byte);
+        void loadOper();
         void jumpOper(ui8 byte, int sign);
-        void callOper(std::string_view opName, bool builtin);
+        void callOper(ui8 byte);
         void iterOper(ui8 byte);
     
     public:

@@ -32,8 +32,8 @@ class ByteCode
         template<typename Op, typename... Bytes>
         inline void addOp(Op op, Bytes... opers);
 
-        void loadReg(ui8 reg, ui8 op);
-        void loadRegConst(Object& constant, ui8 reg);
+        void loadReg(ui8 reg, ui8 op, ui8 offset);
+        void loadRegConst(Object& constant, ui8 reg, ui8 offset);
         // i16 to allow negative values while still
         // fitting all register values.
         ui64 addJump(Opcode op, i16 reg = -1);

@@ -8,9 +8,15 @@
 #include <cmath>
 #include <cstring>
 
+#if COPY_INLINE
+    #define COPY(a, b) copyObject(a, b)
+#else
+    #define COPY(a, b) a = b
+#endif
+
 VM::VM() :
     ip(nullptr), end(nullptr),
-    registers(new Object[regSize])
+    registers(new Object[regSize]), pool(nullptr)
 {
     #if WATCH_REG
     regSlot = 0;
@@ -64,6 +70,43 @@ inline bool VM::isTruthy(const Object& obj)
     }
 }
 
+#if COPY_INLINE
+    inline void VM::copyObject(Object& dest, const Object& src)
+    {
+        if (IS_PRIMITIVE(dest) && IS_PRIMITIVE(src))
+        {
+            dest.type = src.type;
+            dest.as = src.as;
+            return;
+        }
+
+        dest = src;
+    }
+#endif
+
+inline void VM::pushScope(ui8 depth, Object* window)
+{
+    scopeUndo.push_back({depth, depthWindows[depth]});
+    depthWindows[depth] = window;
+}
+
+inline void VM::popScope()
+{
+    const auto& scope = scopeUndo.back();
+    depthWindows[scope.offset] = scope.window;
+    scopeUndo.pop_back();
+}
+
+inline void VM::clearScopes(bool keepGlobal)
+{
+    if (frames.size() == 0) return;
+
+    if (keepGlobal)
+        frames.resize(1);
+    else
+        frames.clear();
+}
+
 inline Object VM::loadOper()
 {
     switch (ui8 oper = readByte())
@@ -87,9 +130,9 @@ inline Object VM::concatStrings(const Object& str1, const Object& str2)
     return ALLOC(String, ObjDealloc<String>, concat);
 }
 
-Object VM::arithOper(Opcode oper)
+Object VM::arithOper(Opcode oper, ui8 offset, ui8 firstOper)
 {
-    const Object& a = registers[readByte()];
+    const Object& a = depthWindows[offset][firstOper];
     const Object& b = registers[readByte()];
 
     if (IS_INT(a) && IS_INT(b))
@@ -133,9 +176,9 @@ Object VM::arithOper(Opcode oper)
         );
 }
 
-inline Object VM::compareOper(Opcode op)
+Object VM::compareOper(Opcode op, ui8 firstOper)
 {
-    const Object& a = registers[readByte()];
+    const Object& a = registers[firstOper];
     const Object& b = registers[readByte()];
 
     if (((op == OP_GT) || (op == OP_LT))
@@ -147,7 +190,7 @@ inline Object VM::compareOper(Opcode op)
             IS_NUM(a) ? b.type : a.type
         );
     }
-    
+
     switch (op)
     {
         case OP_EQUAL:  return (a == b);
@@ -155,7 +198,7 @@ inline Object VM::compareOper(Opcode op)
         case OP_LT:     return (a < b);
         case OP_IN:
         {
-            if (IS_STRING(a) && IS_STRING(b)) // Temporarily.
+            if (IS_STRING(a) && IS_STRING(b))
             {
                 const String& s1 = AS_STRING(a);
                 const String& s2 = AS_STRING(b);
@@ -190,9 +233,9 @@ static inline i64 fromUnsigned(ui64 num)
     return i;
 }
 
-Object VM::bitOper(Opcode op)
+Object VM::bitOper(Opcode op, ui8 offset, ui8 firstOper)
 {
-    const Object& a = registers[readByte()];
+    const Object& a = depthWindows[offset][firstOper];
     const Object& b = registers[readByte()];
 
     if (!IS_INT(a) || !IS_INT(b))
@@ -207,23 +250,24 @@ Object VM::bitOper(Opcode op)
 
     switch (op)
     {
-        case OP_BIT_AND:        return fromUnsigned(aVal & bVal);
-        case OP_BIT_OR:         return fromUnsigned(aVal | bVal);
-        case OP_BIT_XOR:        return fromUnsigned(aVal ^ bVal);
-        case OP_BIT_SHIFT_L:    return fromUnsigned(aVal << bVal);
-        case OP_BIT_SHIFT_R:    return fromUnsigned(aVal >> bVal);
+        case OP_AND:        return fromUnsigned(aVal & bVal);
+        case OP_OR:         return fromUnsigned(aVal | bVal);
+        case OP_XOR:        return fromUnsigned(aVal ^ bVal);
+        case OP_SHIFT_L:    return fromUnsigned(aVal << bVal);
+        case OP_SHIFT_R:    return fromUnsigned(aVal >> bVal);
         default: UNREACHABLE();
     }
 }
 
-Object VM::unaryOper(Opcode op)
+Object VM::unaryOper(Opcode op, ui8 offset, ui8 oper)
 {
-    const Object& obj = registers[readByte()];
+    const Object& obj =
+        (op == OP_COMP ? depthWindows[offset][oper] : registers[oper]);
 
     switch (op)
     {
-        case OP_INCREMENT:
-        case OP_DECREMENT:
+        case OP_INCR:
+        case OP_DECR:
         {
             if (!IS_NUM(obj))
                 throw TypeMismatch(
@@ -232,9 +276,9 @@ Object VM::unaryOper(Opcode op)
                     obj.type
                 );
             if (IS_INT(obj))
-                return AS_INT(obj) + i64(op == OP_INCREMENT ? 1 : -1);
+                return AS_INT(obj) + i64(op == OP_INCR ? 1 : -1);
             else
-                return AS_DEC(obj) + double(op == OP_INCREMENT ? 1 : -1);
+                return AS_DEC(obj) + double(op == OP_INCR ? 1 : -1);
         }
         case OP_NEGATE:
         {
@@ -250,7 +294,7 @@ Object VM::unaryOper(Opcode op)
                 return (AS_NUM(obj) * -1);
         }
         case OP_NOT: return !isTruthy(obj);
-        case OP_BIT_COMP:
+        case OP_COMP:
         {
             if (!IS_INT(obj))
                 throw TypeMismatch(
@@ -264,17 +308,23 @@ Object VM::unaryOper(Opcode op)
     }
 }
 
-void VM::callFunc(ui8 callee, ui8 start, ui8 argCount)
-{
-    const Object& obj = registers[callee];
-    if (!IS_FUNC(obj))
+void VM::callFunc(const Object& callee, ui8 offset, ui8 start, ui8 argCount)
+{    
+    if (!IS_FUNC(callee))
         throw TypeMismatch(
             "Object is not callable.",
             OBJ_FUNC,
-            obj.type
+            callee.type
         );
 
-    const ByteCode& code = AS_FUNC(obj).code;
+    frames.emplace_back(CallFrame::Args{
+        registers, ip, end, pool, offset
+        #if WATCH_EXEC
+        , this->dis
+        #endif
+    });
+
+    const ByteCode& code = AS_FUNC(callee).code;
     registers += start;
     ip = code.block.data();
     end = ip + code.block.size();
@@ -283,6 +333,26 @@ void VM::callFunc(ui8 callee, ui8 start, ui8 argCount)
     #if WATCH_EXEC
         this->dis = new Disassembler(code);
     #endif
+
+    // Objects within a function have a lexical depth
+    // 1 higher than that of the function itself.
+    pushScope(offset + 1, registers);
+}
+
+inline void VM::restoreData()
+{
+    CallFrame& frame = frames.back();
+    registers = frame.regStart;
+    ip = frame.ip;
+    end = frame.end;
+    pool = frame.pool;
+    #if WATCH_EXEC
+        delete this->dis;
+        this->dis = frame.dis;
+    #endif
+
+    frames.pop_back();
+    popScope();
 }
 
 // Handle regSlot.
@@ -344,7 +414,7 @@ void VM::printRegister()
 #endif
 
 void VM::executeOp(Opcode op)
-{   
+{
     #if COMPUTED_GOTO
         static void* dispatchTable[] = {
             #define LABEL_ENABLE(op)    &&CASE_##op
@@ -383,21 +453,24 @@ void VM::executeOp(Opcode op)
         #define SWITCH(op)  DISPATCH();
         #define CASE(op)    CASE_##op
         #define DEFAULT     CASE_NO_REACH
-    #else
+
+    #else // if !COMPUTED_GOTO
         #define SWITCH(op)  switch (op)
         #define CASE(op)    case op
         #define DISPATCH()  break
         #define DEFAULT     default
+
     #endif
 
     SWITCH(op)
     {
         CASE(OP_LOAD_R):
         {
+            ui8 offset = readByte();
             ui8 dest = readByte();
-            registers[dest] = loadOper();
+            depthWindows[offset][dest] = loadOper();
             #if WATCH_REG
-            regSlot = dest;
+            regSlot = dest; // Fix.
             #endif
             DISPATCH();
         }
@@ -446,19 +519,28 @@ void VM::executeOp(Opcode op)
             DISPATCH();
         }
         CASE(OP_GET_VAR):
-        CASE(OP_SET_VAR):
         {
+            ui8 offset = readByte();
             ui8 dest = readByte();
             ui8 src = readByte();
 
-            if ((op == OP_SET_VAR) && !IS_VALID(registers[src]))
+            COPY(registers[dest], depthWindows[offset][src]);
+            #if WATCH_REG
+            regSlot = dest; // Fix.
+            #endif
+            DISPATCH();
+        }
+        CASE(OP_SET_VAR):
+        {
+            ui8 offset = readByte();
+            ui8 dest = readByte();
+            ui8 src = readByte();
+
+            if (!IS_VALID(registers[src]))
                 throw RuntimeError(Token(),
                     "Type-less value cannot be assigned to a variable.");
 
-            registers[dest] = registers[src];
-            #if WATCH_REG
-            regSlot = (op == OP_GET_VAR ? dest : regSlot);
-            #endif
+            COPY(depthWindows[offset][dest], registers[src]);
             DISPATCH();
         }
         CASE(OP_MAKE_ITER):
@@ -473,19 +555,21 @@ void VM::executeOp(Opcode op)
         CASE(OP_ADD):   CASE(OP_SUB):   CASE(OP_MULT):
         CASE(OP_DIV):   CASE(OP_MOD):   CASE(OP_POWER):
         {
+            ui8 offset = readByte();
             ui8 dest = readByte();
-            registers[dest] = arithOper(op);
+            depthWindows[offset][dest] = arithOper(op, offset, dest);
             #if WATCH_REG
-            regSlot--;
+            regSlot--; // Fix.
             #endif
             DISPATCH();
         }
 
         // Comparison operators.
+
         CASE(OP_GT):    CASE(OP_LT):    CASE(OP_EQUAL):     CASE(OP_IN):
         {
             ui8 dest = readByte();
-            registers[dest] = compareOper(op);
+            registers[dest] = compareOper(op, dest);
             #if WATCH_REG
             regSlot--;
             #endif
@@ -493,23 +577,33 @@ void VM::executeOp(Opcode op)
         }
 
         // Bit-wise operators.
-        CASE(OP_BIT_AND):       CASE(OP_BIT_OR):        CASE(OP_BIT_XOR):
-        CASE(OP_BIT_SHIFT_L):   CASE(OP_BIT_SHIFT_R):
+
+        CASE(OP_AND):       CASE(OP_OR):        CASE(OP_XOR):
+        CASE(OP_SHIFT_L):   CASE(OP_SHIFT_R):
         {
+            ui8 offset = readByte();
             ui8 dest = readByte();
-            registers[dest] = bitOper(op);
+            depthWindows[offset][dest] = bitOper(op, offset, dest);
             #if WATCH_REG
-            regSlot--;
+            regSlot--; // Fix.
             #endif
             DISPATCH();
         }
 
         // Unary operators.
-        CASE(OP_INCREMENT):     CASE(OP_DECREMENT):     CASE(OP_NEGATE):
-        CASE(OP_NOT):           CASE(OP_BIT_COMP):
+
+        CASE(OP_INCR):      CASE(OP_DECR):      CASE(OP_COMP):
+        {
+            ui8 offset = readByte();
+            ui8 dest = readByte();
+            depthWindows[offset][dest] = unaryOper(op, offset, dest);
+            DISPATCH();
+        }
+
+        CASE(OP_NEGATE):    CASE(OP_NOT):
         {
             ui8 dest = readByte();
-            registers[dest] = unaryOper(op);
+            registers[dest] = unaryOper(op, 0, dest);
             DISPATCH();
         }
 
@@ -522,6 +616,7 @@ void VM::executeOp(Opcode op)
         }
 
         // Functions.
+
         CASE(OP_CALL_NAT):
         {
             ui8 callee = readByte();
@@ -535,44 +630,27 @@ void VM::executeOp(Opcode op)
         }
         CASE(OP_CALL_DEF):
         {
-            ui8 callee = readByte();
+            ui8 offset = readByte();
+            const Object& callee = depthWindows[offset][readByte()];
             ui8 start = readByte();
             ui8 argCount = readByte();
 
-            contexts.emplace(FuncContext::Args{
-                registers, ip, end, pool
-                #if WATCH_EXEC
-                , this->dis
-                #endif
-            });
-
-            callFunc(callee, start, argCount);
+            callFunc(callee, offset, start, argCount);
             DISPATCH();
         }
         CASE(OP_RETURN):
         {   
             ui8 retSlot = readByte();
-            registers[0] = registers[retSlot];
+            COPY(registers[0], registers[retSlot]);
 
             // Correct regSlot after return.
-
-            FuncContext& context = contexts.top();
-            registers = context.regStart;
-            ip = context.ip;
-            end = context.end;
-            pool = context.pool;
-            #if WATCH_EXEC
-                delete this->dis;
-                this->dis = context.dis;
-            #endif
-
-            contexts.pop();
+            restoreData();
             DISPATCH();
         }
         CASE(OP_VOID):
         {
             ui8 dest = readByte();
-            registers[dest] = Object();
+            registers[dest].type = OBJ_INVALID;
             DISPATCH();
         }
 
@@ -590,6 +668,11 @@ void VM::executeCode(const ByteCode& code)
         Disassembler dis(code);
         this->dis = &dis;
     #endif
+
+    frames.reserve(CALL_FRAMES_DEFAULT);
+    scopeUndo.reserve(MAX_SCOPE_DEPTH);
+
+    depthWindows[0] = registers;
 
     try
     {
@@ -613,22 +696,26 @@ void VM::executeCode(const ByteCode& code)
     catch (TypeMismatch& error)
     {
         error.report();
+        clearScopes(true); // Escape all nested calls.
     }
     catch (RuntimeError& error)
     {
         error.report();
+        clearScopes(true);
     }
 
     #if WATCH_EXEC
         this->dis = nullptr;
     #endif
+
+    clearScopes(false); // Clear all function scopes (including global script).
 }
 
 /* FuncContext logic. */
 
-VM::FuncContext::FuncContext(const Args& args) :
+VM::CallFrame::CallFrame(const Args& args) :
     regStart(args.regStart), ip(args.ip), end(args.end),
-    pool(args.pool)
+    pool(args.pool), offset(args.offset)
     #if WATCH_EXEC
     , dis(args.dis)
     #endif

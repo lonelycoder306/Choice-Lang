@@ -25,18 +25,8 @@ enum Opcode : ui8 // Each opcode is a single byte.
 	OP_POWER,		// Raise a value to a power.
 	OP_MOD,			// Take the modulus between two values.
 	OP_NEGATE,		// Invert a value's sign.
-	OP_INCREMENT,	// Increment a value.
-	OP_DECREMENT,	// Decrement a value.
-
-	// Variables.
-
-	OP_GET_VAR,		// Retrieve/load a variable.
-	OP_SET_VAR,		// Assign to a variable.
-
-	// Other types.
-
-	OP_LIST,		// Create a list.
-	OP_TABLE,		// Create a key-value table.
+	OP_INCR,		// Increment a value.
+	OP_DECR,		// Decrement a value.
 
 	// Comparison.
 
@@ -51,13 +41,24 @@ enum Opcode : ui8 // Each opcode is a single byte.
 	// && and || are implemented as control flow.
 	// They don't get their own opcodes.
 
-    // Bit-wise operators.
-    OP_BIT_AND,     // AND two numeric values by bits.
-    OP_BIT_OR,      // OR two numeric values by bits.
-    OP_BIT_COMP,    // Invert the bits of a number.
-    OP_BIT_XOR,     // XOR the bits of two numeric values.
-    OP_BIT_SHIFT_R, // Shift a value's bits to the right.
-    OP_BIT_SHIFT_L, // Shift a value's bits to the left.
+	// Bit-wise operators.
+
+    OP_AND,			// OP_AND two numeric values by bits.
+    OP_OR,			// OP_OR two numeric values by bits.
+    OP_COMP,		// Invert the bits of a number.
+    OP_XOR,			// XOR the bits of two numeric values.
+    OP_SHIFT_R,		// Shift a value's bits to the right.
+    OP_SHIFT_L,		// Shift a value's bits to the left.
+
+	// Variables.
+
+	OP_GET_VAR,		// Retrieve/load a variable.
+	OP_SET_VAR,		// Assign to a variable.
+
+	// Types.
+
+	OP_LIST,		// Create a list.
+	OP_TABLE,		// Create a key-value table.
 
 	// Functions.
 
@@ -84,25 +85,31 @@ enum Opcode : ui8 // Each opcode is a single byte.
 	OP_LOAD_R,		// Load a constant into a register.
 	OP_MOVE_R,		// Store a register's value in another register.
 	OP_PRINT_VALID,	// Print the result of an expression, except calls to void (non-returning) functions.
+	TOTAL_OPS
 };
 
-#define IS_VALID_OP(op)	(((op) >= OP_NEG_TWO) && ((op) <= OP_MOVE_R))
+#define IS_VALID_OP(op)	(((op) >= 0) && ((op) < TOTAL_OPS))
+/*	Opcodes that can directly modify variables,
+*	and thus have a necessary offset argument. */
+#define CAN_MODIFY(op) \
+	(((op) >= OP_ADD) && ((op) <= OP_DECR)) \
+	|| (((op) <= OP_AND) && ((op) >= OP_SHIFT_L))
 
 static std::string_view opNames[] = {
 	"OP_NEG_TWO", "OP_NEG_ONE", "OP_ZERO", "OP_ONE",
 	"OP_TWO", "OP_TRUE", "OP_FALSE", "OP_NULL",
 
 	"OP_ADD", "OP_SUB", "OP_MULT", "OP_DIV", "OP_POWER",
-	"OP_MOD", "OP_NEGATE", "OP_INCREMENT", "OP_DECREMENT",
+	"OP_MOD", "OP_NEGATE", "OP_INCR", "OP_DECR",
+
+	"OP_EQUAL", "OP_GT", "OP_LT", "OP_IN", "OP_NOT",
+
+	"OP_AND", "OP_OR", "OP_COMP", "OP_XOR",
+    "OP_SHIFT_R", "OP_SHIFT_L",
 
 	"OP_GET_VAR", "OP_SET_VAR",
 
 	"OP_LIST", "OP_TABLE",
-
-	"OP_EQUAL", "OP_GT", "OP_LT", "OP_IN", "OP_NOT",
-
-    "OP_BIT_AND", "OP_BIT_OR", "OP_BIT_COMP", "OP_BIT_XOR",
-    "OP_BIT_SHIFT_R", "OP_BIT_SHIFT_L",
 
 	"OP_CALL_NAT", "OP_CALL_DEF", "OP_RETURN", "OP_VOID",
 
@@ -110,6 +117,6 @@ static std::string_view opNames[] = {
 
 	"OP_JUMP", "OP_JUMP_TRUE", "OP_JUMP_FALSE", "OP_LOOP",
 	"OP_BYTE_OPER", "OP_SHORT_OPER", "OP_LONG_OPER",
-	
+
 	"OP_LOAD_R", "OP_MOVE_R", "OP_PRINT_VALID"
 };

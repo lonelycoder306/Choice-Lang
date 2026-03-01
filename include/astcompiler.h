@@ -50,9 +50,21 @@ class ASTCompiler
         )
 
     private:
+        struct VarInfo
+        {
+            ui8* slot;
+            ui8 scope; // Block scope depth.
+            ui8 depth; // Function scope depth.
+            bool access;
+        };
+
         ByteCode code;
+        ASTCompiler* scopeCompiler;
+
         ui8 previousReg;
-        ui8 scope; // Our current lexical scope depth.
+        ui8 scope; // Our current block scope depth.
+        ui8 depth; // Our current function scope depth.
+
         std::stack<std::vector<std::string>> varScopes;
         ASTCompVarsWrapper* varsWrapper;
         ASTCompLoopLabels* labelsWrapper;
@@ -62,9 +74,9 @@ class ASTCompiler
         // Variables.
 
         inline void defVar(std::string name, ui8 reg, bool access);
-        inline ui8* getVarSlot(const Token& token);
-        inline ui8* getVarSlot(ExprUP& node);
         inline bool getAccess(ui8 reg);
+        inline VarInfo getVarInfo(const Token& token);
+        inline VarInfo getVarInfo(ExprUP& node);
         inline void popScope();
 
         // Registers.
@@ -98,14 +110,14 @@ class ASTCompiler
 
         // Expressions.
 
-        void compoundAssign(UP(AssignExpr)& node, ui8 slot); // Helper.
+        void compoundAssign(UP(AssignExpr)& node, const VarInfo& pos); // Helper.
         DECL(AssignExpr);
         DECL(LogicExpr);
         DECL(CompareExpr);
         DECL(BitExpr);
         DECL(ShiftExpr);
         DECL(BinaryExpr);
-        void _crementExpr(UP(UnaryExpr)& node);
+        void _crementExpr(UP(UnaryExpr)& node); // Helper.
         DECL(UnaryExpr);
         DECL(CallExpr);
         DECL(IfExpr);
@@ -118,7 +130,7 @@ class ASTCompiler
     public:
         int errorCount; // So it can be modified directly.
 
-        ASTCompiler();
+        ASTCompiler(ASTCompiler* comp = nullptr);
         ~ASTCompiler();
 
         ByteCode& compile(StmtVec& program);

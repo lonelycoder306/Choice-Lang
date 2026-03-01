@@ -269,6 +269,8 @@ Object::Object(T val)
     }
 }
 
+// Type check and validation macros.
+
 #define IS_INT(obj)         ((obj).type == OBJ_INT)
 #define IS_DEC(obj)         ((obj).type == OBJ_DEC)
 #define IS_BOOL(obj)        ((obj).type == OBJ_BOOL)
@@ -277,14 +279,16 @@ Object::Object(T val)
 #define IS_STRING(obj)      ((obj).type == OBJ_STRING)
 #define IS_RANGE(obj)       ((obj).type == OBJ_RANGE)
 
-#define IS_HEAP_TYPE(type)  (((type) > OBJ_NULL) && ((type) < OBJ_NUM))
-#define IS_HEAP_OBJ(obj)    (IS_HEAP_TYPE((obj).type))
+#define IS_HEAP_OBJ(obj)    (((obj).type > OBJ_NULL) && ((obj).type < OBJ_NUM))
 #define IS_ITER(obj)        ((obj).type == OBJ_ITER)
 
-#define IS_VALID(obj)       ((obj).type != OBJ_INVALID)
 #define IS_NUM(obj)         (IS_INT(obj) || IS_DEC(obj))
 #define IS_ITERABLE(obj)    (((obj).type >= OBJ_STRING) && ((obj).type <= OBJ_TABLE))
 
+#define IS_PRIMITIVE(obj)   (!IS_HEAP_OBJ(obj) && !(IS_ITER(obj)))
+#define IS_VALID(obj)       ((obj).type != OBJ_INVALID)
+
+// Conversion macros.
 
 #define AS_INT(obj)         ((obj).as.intVal)
 #define AS_DEC(obj)         ((obj).as.doubleVal)

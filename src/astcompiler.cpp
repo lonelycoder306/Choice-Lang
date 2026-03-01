@@ -31,13 +31,16 @@ class ASTCompLoopLabels
         ASTCompLoopLabels() = default;
 };
 
-ASTCompiler::ASTCompiler() :
-    previousReg(0), scope(0),
+ASTCompiler::ASTCompiler(ASTCompiler* comp) :
+    scopeCompiler(comp), previousReg(0), scope(0),
     varsWrapper(new ASTCompVarsWrapper),
     labelsWrapper(new ASTCompLoopLabels),
     endJumps(nullptr), breakJumps(nullptr),
     continueJumps(nullptr), hitError(false),
-    errorCount(0) {}
+    errorCount(0)
+{
+    depth = (comp == nullptr ? 0 : comp->depth + 1);
+}
 
 ASTCompiler::~ASTCompiler()
 {
@@ -47,35 +50,41 @@ ASTCompiler::~ASTCompiler()
 
 inline void ASTCompiler::defVar(std::string name, ui8 reg, bool access)
 {
-    varsWrapper->vars[{name, scope}] = reg;
+    varsWrapper->vars[{ name, scope }] = reg;
     varsWrapper->access[reg] = access;
     if (scope != 0) varScopes.top().push_back(name);
 }
 
-inline ui8* ASTCompiler::getVarSlot(const Token& token)
+inline bool ASTCompiler::getAccess(ui8 reg)
+{
+    bool* ret = varsWrapper->access.get(reg);
+    ASSERT(ret != nullptr,
+        "Variable registered with no access field.");
+    return *ret;
+}
+
+inline ASTCompiler::VarInfo ASTCompiler::getVarInfo(const Token& token)
 {
     for (ui8 i = 0; i <= scope; i++)
     {
         VarEntry entry(token.text, scope - i);
         ui8* slot = varsWrapper->vars.get(entry);
         if (slot != nullptr)
-            return slot;
+            return { slot, static_cast<ui8>(scope - i), depth,
+                getAccess(*slot) };
     }
 
-    return nullptr;
+    if (scopeCompiler == nullptr)
+        return { nullptr, 0, 0 , false };
+    return scopeCompiler->getVarInfo(token);
 }
 
-inline ui8* ASTCompiler::getVarSlot(ExprUP& node)
+inline ASTCompiler::VarInfo ASTCompiler::getVarInfo(ExprUP& node)
 {
     VarExpr* var = static_cast<VarExpr*>(node.release());
-    ui8* slot = getVarSlot(var->name);
+    VarInfo position = getVarInfo(var->name);
     node.reset(var);
-    return slot;
-}
-
-inline bool ASTCompiler::getAccess(ui8 reg)
-{
-    return *(varsWrapper->access.get(reg));
+    return position;
 }
 
 inline void ASTCompiler::popScope()
@@ -87,19 +96,22 @@ inline void ASTCompiler::popScope()
 
 DEF(VarDecl)
 {
-    ui8* slot = getVarSlot(node->name);
-    if (slot != nullptr)
+    VarInfo pos = getVarInfo(node->name);
+    if ((pos.slot != nullptr)
+        && (pos.scope == scope)
+        && (pos.depth == 0))
     {
         #if ALLOW_REDEFS
-            ui8 varSlot = *slot;
+            ui8 varSlot = *(pos.slot);
             ui8 reg = previousReg;
             if (node->init)
             {
                 compileExpr(node->init);
-                code.addOp(OP_SET_VAR, varSlot, reg);
+                // We only declare in the current function scope.
+                code.addOp(OP_SET_VAR, depth, varSlot, reg);
             }
             else
-                code.loadReg(varSlot, OP_NULL);
+                code.loadReg(varSlot, OP_NULL, depth);
             return;
             
         #else
@@ -114,7 +126,7 @@ DEF(VarDecl)
         compileExpr(node->init);
     else
     {
-        code.loadReg(varSlot, OP_NULL);
+        code.loadReg(varSlot, OP_NULL, depth);
         reserveReg();
     }
 
@@ -130,9 +142,11 @@ DEF(VarDecl)
 
 DEF(FuncDecl)
 {
-    ui8* slot = getVarSlot(node->name);
+    VarInfo pos = getVarInfo(node->name);
     bool redefined = false;
-    if (slot != nullptr)
+    if ((pos.slot != nullptr)
+        && (pos.scope == scope)
+        && (pos.depth == 0))
     {
         #if ALLOW_REDEFS
             redefined = true;
@@ -143,9 +157,15 @@ DEF(FuncDecl)
         #endif
     }
 
-    ui8 varSlot = (redefined ? *slot : previousReg);
+    ui8 varSlot = (redefined ? *(pos.slot) : previousReg);
     std::string name = std::string(node->name.text);
-    ASTCompiler miniCompiler;
+    if (!redefined)
+    {
+        defVar(name, varSlot, accessFix); // Temporarily.
+        reserveReg();
+    }
+
+    ASTCompiler miniCompiler(this);
     for (Token& param : node->params)
     {
         ui8 reg = miniCompiler.previousReg;
@@ -158,17 +178,8 @@ DEF(FuncDecl)
 
     ByteCode& funcCode = miniCompiler.code;
     Object func = ALLOC(Function, ObjDealloc<Function>, name, funcCode);
-
-    if (redefined)
-    {
-        code.loadRegConst(func, varSlot);
-        return;
-    }
-
-    code.loadRegConst(func, varSlot);
-
-    defVar(name, varSlot, accessFix); // Temporarily.
-    reserveReg();
+    // We only declare in the current function scope.
+    code.loadRegConst(func, varSlot, depth);
 }
 
 DEF(ClassDecl) { (void) node; }
@@ -458,7 +469,7 @@ DEF(BlockStmt)
     previousReg = origVarReg;
 }
 
-void ASTCompiler::compoundAssign(UP(AssignExpr)& node, ui8 slot)
+void ASTCompiler::compoundAssign(UP(AssignExpr)& node, const VarInfo& pos)
 {
     ui8 reg = previousReg;
     compileExpr(node->value);
@@ -473,43 +484,44 @@ void ASTCompiler::compoundAssign(UP(AssignExpr)& node, ui8 slot)
         case TOK_PERCENT_EQ:    op = OP_MOD;            break;
         case TOK_STAR_STAR_EQ:  op = OP_POWER;          break;
 
-        case TOK_AMP_EQ:        op = OP_BIT_AND;        break;
-        case TOK_BAR_EQ:        op = OP_BIT_OR;         break;
-        case TOK_UARROW_EQ:     op = OP_BIT_XOR;        break;
-        case TOK_TILDE_EQ:      op = OP_BIT_COMP;       break;
-        case TOK_LSHIFT_EQ:     op = OP_BIT_SHIFT_L;    break;
-        case TOK_RSHIFT_EQ:     op = OP_BIT_SHIFT_R;    break;
+        case TOK_AMP_EQ:        op = OP_AND;            break;
+        case TOK_BAR_EQ:        op = OP_OR;             break;
+        case TOK_UARROW_EQ:     op = OP_XOR;            break;
+        case TOK_TILDE_EQ:      op = OP_COMP;           break;
+        case TOK_LSHIFT_EQ:     op = OP_SHIFT_L;        break;
+        case TOK_RSHIFT_EQ:     op = OP_SHIFT_R;        break;
         default: UNREACHABLE();
     }
 
-    code.addOp(op, slot, slot, reg);
-    code.addOp(OP_GET_VAR, reg, slot);
+    ui8 slot = *(pos.slot);
+    code.addOp(op, pos.depth, slot, reg);
+    code.addOp(OP_GET_VAR, pos.depth, reg, slot);
 }
 
 DEF(AssignExpr)
 {
-    ui8* ptr = getVarSlot(node->target);
+    VarInfo pos = getVarInfo(node->target);
     // Temporarily assuming regular variables only.
-    if (ptr == nullptr)
+    if (pos.slot == nullptr)
     {
         VarExpr* temp = static_cast<VarExpr*>(node->target.release());
         UP(VarExpr) varUP = UP(VarExpr)(temp);
         REPORT_ERROR(varUP->name, "Undefined variable '"
             + std::string(varUP->name.text) + "'.");
     }
-    else if (getAccess(*ptr) == accessFix)
+    else if (pos.access == accessFix)
         REPORT_ERROR(node->oper,
             "Cannot assign to a fixed-value variable.");
 
     if (node->oper.type != TOK_EQUAL)
     {
-        compoundAssign(node, *ptr);
+        compoundAssign(node, pos);
         return;
     }
 
     ui8 reg = previousReg;
     compileExpr(node->value);
-    code.addOp(OP_SET_VAR, *ptr, reg);
+    code.addOp(OP_SET_VAR, pos.depth, *(pos.slot), reg);
 }
 
 DEF(LogicExpr)
@@ -564,10 +576,10 @@ DEF(CompareExpr)
         default: UNREACHABLE();
     }
 
-    code.addOp(op, firstOper, firstOper, secondOper);
+    code.addOp(op, firstOper, secondOper);
     if ((node->oper == TOK_NOT) || (node->oper == TOK_GT_EQ)
         || (node->oper == TOK_LT_EQ) || (node->oper == TOK_BANG_EQ))
-            code.addOp(OP_NOT, firstOper, firstOper);
+            code.addOp(OP_NOT, firstOper);
     freeReg();
 }
 
@@ -582,13 +594,13 @@ DEF(BitExpr)
     Opcode op;
     switch (node->oper)
     {
-        case TOK_AMP:       op = OP_BIT_AND;    break;
-        case TOK_BAR:       op = OP_BIT_OR;     break;
-        case TOK_UARROW:    op = OP_BIT_XOR;    break;
+        case TOK_AMP:       op = OP_AND;    break;
+        case TOK_BAR:       op = OP_OR;     break;
+        case TOK_UARROW:    op = OP_XOR;    break;
         default: UNREACHABLE();
     }
 
-    code.addOp(op, firstOper, firstOper, secondOper);
+    code.addOp(op, firstOper, secondOper);
     freeReg();
 }
 
@@ -601,8 +613,7 @@ DEF(ShiftExpr)
     compileExpr(node->right);
 
     code.addOp(node->oper == TOK_RIGHT_SHIFT ?
-        OP_BIT_SHIFT_R : OP_BIT_SHIFT_L,
-        firstOper, firstOper, secondOper);
+        OP_SHIFT_R : OP_SHIFT_L, firstOper, secondOper);
     freeReg();
 }
 
@@ -626,7 +637,7 @@ DEF(BinaryExpr)
         default: UNREACHABLE();
     }
 
-    code.addOp(op, firstOper, firstOper, secondOper);
+    code.addOp(op, depth, firstOper, secondOper);
     freeReg();
 }
 
@@ -638,25 +649,27 @@ void ASTCompiler::_crementExpr(UP(UnaryExpr)& node)
     if (node->expr->type != E_VAR_EXPR)
         REPORT_ERROR(node->oper,
             "Invalid increment/decrement target.");
-    ui8* ptr = getVarSlot(node->expr);
+    VarInfo pos = getVarInfo(node->expr);
     // Temporarily assuming regular variables only.
-    if (ptr == nullptr)
+    if (pos.slot == nullptr)
     {
         VarExpr* temp = static_cast<VarExpr*>(node->expr.release());
         UP(VarExpr) varUP = UP(VarExpr)(temp);
         REPORT_ERROR(varUP->name, "Undefined variable '"
             + std::string(varUP->name.text) + "'.");
     }
-    else if (getAccess(*ptr) == accessFix)
+    else if (pos.access == accessFix)
         REPORT_ERROR(node->oper,
             "Cannot modify a fixed-value variable.");
 
+    ui8 slot = *(pos.slot);
     if (node->prev) // Load the original value.
-        code.addOp(OP_GET_VAR, previousReg, *ptr);
-    code.addOp(node->oper.type == TOK_INCR ? OP_INCREMENT : OP_DECREMENT,
-        *ptr, *ptr);
+        code.addOp(OP_GET_VAR, pos.depth, previousReg, slot);
+    code.addOp(node->oper.type == TOK_INCR ? OP_INCR : OP_DECR,
+        pos.depth, slot);
     if (!node->prev) // Load the new value.
-        code.addOp(OP_GET_VAR, previousReg, *ptr);
+        code.addOp(OP_GET_VAR, pos.depth, previousReg, slot);
+
     reserveReg();
 }
 
@@ -667,7 +680,7 @@ DEF(UnaryExpr)
         _crementExpr(node);
         return;
     }
-    
+
     ui8 firstOper = previousReg;
     compileExpr(node->expr);
 
@@ -677,11 +690,14 @@ DEF(UnaryExpr)
         case TOK_MINUS: op = OP_NEGATE;     break;
         case TOK_BANG:
         case TOK_NOT:   op = OP_NOT;        break;
-        case TOK_TILDE: op = OP_BIT_COMP;   break;
+        case TOK_TILDE: op = OP_COMP;       break;
         default: UNREACHABLE();
     }
 
-    code.addOp(op, firstOper, firstOper);
+    if (op == OP_COMP) // OP_COMP requires a depth argument.
+        code.addOp(op, depth, firstOper);
+    else
+        code.addOp(op, firstOper);
     // We don't free a register since unary
     // operators don't use any extra registers.
     // They apply an operator directly onto a
@@ -693,8 +709,9 @@ DEF(CallExpr)
     // For now only assuming:
     // [identfier][!](args...)
     VarExpr* var = static_cast<VarExpr*>(node->callee.get());
-
     ui8 location;
+    ui8 varDepth;
+
     if (node->builtin)
     {
         auto find = Natives::builtins.find(var->name.text);
@@ -705,11 +722,12 @@ DEF(CallExpr)
     }
     else
     {
-        ui8* ptr = getVarSlot(var->name);
-        if (ptr == nullptr)
+        VarInfo pos = getVarInfo(var->name);
+        if (pos.slot == nullptr)
             REPORT_ERROR(var->name, "Undefined variable '"
                 + std::string(var->name.text) + "'.");
-        location = *ptr;
+        location = *(pos.slot);
+        varDepth = pos.depth;
     }
 
     ui8 argsStart = previousReg;
@@ -717,8 +735,10 @@ DEF(CallExpr)
         compileExpr(arg);
 
     ui8 size = static_cast<ui8>(node->args.size());
-    code.addOp(node->builtin ? OP_CALL_NAT : OP_CALL_DEF,
-        location, argsStart, size);
+    if (node->builtin)
+        code.addOp(OP_CALL_NAT, location, argsStart, size);
+    else
+        code.addOp(OP_CALL_DEF, varDepth, location, argsStart, size);
 
     // Skip arguments.
     // Our return value replaces the first argument.
@@ -747,11 +767,11 @@ DEF(IfExpr)
 
 DEF(VarExpr)
 {
-    ui8* ptr = getVarSlot(node->name);
-    if (ptr == nullptr)
+    VarInfo pos = getVarInfo(node->name);
+    if (pos.slot == nullptr)
         REPORT_ERROR(node->name, "Undefined variable '"
             + std::string(node->name.text) + "'.");
-    code.addOp(OP_GET_VAR, previousReg, *ptr);
+    code.addOp(OP_GET_VAR, pos.depth, previousReg, *(pos.slot));
     reserveReg();
 }
 
@@ -762,41 +782,41 @@ DEF(LiteralExpr)
     if (tok.type == TOK_NUM)
     {
         Object obj = tok.content.i;
-        code.loadRegConst(obj, previousReg);
+        code.loadRegConst(obj, previousReg, depth);
         reserveReg();
     }
 
     else if (tok.type == TOK_NUM_DEC)
     {
         Object obj = tok.content.d;
-        code.loadRegConst(obj, previousReg);
+        code.loadRegConst(obj, previousReg, depth);
         reserveReg();
     }
 
     else if (tok.type == TOK_STR_LIT)
     {
         Object obj = ALLOC(String, ObjDealloc<String>, GET_STR(tok));
-        code.loadRegConst(obj, previousReg);
+        code.loadRegConst(obj, previousReg, depth);
         reserveReg();
     }
 
     else if (tok.type == TOK_RANGE)
     {
         Object obj = ALLOC(Range, ObjDealloc<Range>, constructRange(tok.text));
-        code.loadRegConst(obj, previousReg);
+        code.loadRegConst(obj, previousReg, depth);
         reserveReg();
     }
 
     else if ((tok.type == TOK_TRUE) || (tok.type == TOK_FALSE))
     {
         bool value = tok.content.b;
-        code.loadReg(previousReg, (value ? OP_TRUE : OP_FALSE));
+        code.loadReg(previousReg, (value ? OP_TRUE : OP_FALSE), depth);
         reserveReg();
     }
 
     else if (tok.type == TOK_NULL)
     {
-        code.loadReg(previousReg, OP_NULL);
+        code.loadReg(previousReg, OP_NULL, depth);
         reserveReg();
     }
 }
