@@ -37,8 +37,8 @@
 #if EXTERNAL_REPL
 	#define TRACK_REPL_HISTORY	1
 	#define SAVE_REPL_HISTORY	1
-	#define LOAD_REPL_HISTORY	0
-	#define CLEAR_REPL_HISTORY	1
+	#define LOAD_REPL_HISTORY	1
+	#define CLEAR_REPL_HISTORY	0
 #endif
 
 std::string file = "";
