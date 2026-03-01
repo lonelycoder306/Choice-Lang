@@ -64,6 +64,7 @@ $(REPL_LIB):
 
 clean:
 	@rm -f $(OBJ_DIR)/*.o
+	@rm -f $(OBJ_DIR)/*.d
 	@make --no-print-directory -C $(REPL_DIR) clean
 
 fclean: clean
