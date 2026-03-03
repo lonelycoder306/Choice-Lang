@@ -18,7 +18,7 @@ static std::string_view objTypes[] = {
 Object::Object() :
     type(OBJ_INVALID)
 {
-    AS_INT(*this) = 0;
+    AS_(int, *this) = 0;
 }
 
 void Object::clean()
@@ -34,9 +34,9 @@ void Object::clean()
             temp->refCount--;
             if (temp->refCount == 0) delete temp;
         }
-        else if (IS_ITER(*this))
+        else if (IS_(ITER, *this))
         {
-            ObjIter* iter = AS_ITER(*this);
+            ObjIter* iter = AS_(iter, *this);
             ASSERT(iter != nullptr, "NULL iterator pointer");
             delete iter; // We never copy iterators, so no refcount.
         }
@@ -46,7 +46,7 @@ void Object::clean()
 Object::Object(const Object& other) :
     type(other.type), as(other.as)
 {
-    ASSERT(!IS_ITER(other), "Copying an iterator is not allowed");
+    ASSERT(!IS_(ITER, other), "Copying an iterator is not allowed");
 
     #if !USE_ALLOC
         if (IS_HEAP_OBJ(*this))
@@ -56,7 +56,7 @@ Object::Object(const Object& other) :
 
 Object& Object::operator=(const Object& other)
 {
-    ASSERT(!IS_ITER(other), "Copying an iterator is not allowed");
+    ASSERT(!IS_(ITER, other), "Copying an iterator is not allowed");
     
     if (this != &other)
     {
@@ -78,7 +78,7 @@ Object::Object(Object&& other) noexcept :
     type(other.type), as(other.as)
 {
     other.type = OBJ_INVALID; // To prevent deallocation when it is destroyed.
-    AS_INT(other) = 0;
+    AS_(int, other) = 0;
 }
 
 Object& Object::operator=(Object&& other) noexcept
@@ -91,7 +91,7 @@ Object& Object::operator=(Object&& other) noexcept
         this->as = other.as;
 
         other.type = OBJ_INVALID;
-        AS_INT(other) = 0;
+        AS_(int, other) = 0;
     }
 
     return *this;
@@ -108,15 +108,15 @@ bool Object::operator==(const Object& other) const
 
     switch (this->type)
     {
-        case OBJ_INT:       return AS_INT(*this) == AS_INT(other);
-        case OBJ_DEC:       return AS_DEC(*this) == AS_DEC(other);
-        case OBJ_BOOL:      return AS_BOOL(*this) == AS_BOOL(other);
+        case OBJ_INT:       return AS_(int, *this) == AS_(int, other);
+        case OBJ_DEC:       return AS_(dec, *this) == AS_(dec, other);
+        case OBJ_BOOL:      return AS_(bool, *this) == AS_(bool, other);
         case OBJ_NULL:      return true;
-        case OBJ_TYPE:      return AS_TYPE(*this) == AS_TYPE(other);
-        case OBJ_NATIVE:    return AS_NATIVE(*this) == AS_NATIVE(other);
-        case OBJ_FUNC:      return AS_FUNC(*this) == AS_FUNC(other);
-        case OBJ_STRING:    return AS_STRING(*this) == AS_STRING(other);
-        case OBJ_RANGE:     return AS_RANGE(*this) == AS_RANGE(other);
+        case OBJ_TYPE:      return AS_(type, *this) == AS_(type, other);
+        case OBJ_NATIVE:    return AS_(native, *this) == AS_(native, other);
+        case OBJ_FUNC:      return AS_(func, *this) == AS_(func, other);
+        case OBJ_STRING:    return AS_(string, *this) == AS_(string, other);
+        case OBJ_RANGE:     return AS_(range, *this) == AS_(range, other);
         default: UNREACHABLE();
     }
 }
@@ -139,19 +139,19 @@ std::string Object::printVal() const
 {
     switch (type)
     {
-        case OBJ_INT:       return std::to_string(AS_INT(*this));
-        case OBJ_DEC:       return std::to_string(AS_DEC(*this));
-        case OBJ_BOOL:      return (AS_BOOL(*this) ? "true" : "false");
+        case OBJ_INT:       return std::to_string(AS_(int, *this));
+        case OBJ_DEC:       return std::to_string(AS_(dec, *this));
+        case OBJ_BOOL:      return (AS_(bool, *this) ? "true" : "false");
         case OBJ_NULL:      return "null";
-        case OBJ_TYPE:      return std::string(objTypes[AS_TYPE(*this)]);
+        case OBJ_TYPE:      return std::string(objTypes[AS_(type, *this)]);
         case OBJ_NATIVE:
-            return "builtin '" + std::string(Natives::funcNames[AS_NATIVE(*this)]) + "'";
-        case OBJ_FUNC:      return "func '" + AS_FUNC(*this).name + "'";
-        case OBJ_STRING:    return AS_STRING(*this).printVal();
-        case OBJ_RANGE:     return AS_RANGE(*this).printVal();
+            return "builtin '" + std::string(Natives::funcNames[AS_(native, *this)]) + "'";
+        case OBJ_FUNC:      return "func '" + AS_(func, *this)->name + "'";
+        case OBJ_STRING:    return AS_(string, *this)->printVal();
+        case OBJ_RANGE:     return AS_(range, *this)->printVal();
         case OBJ_ITER:
         {
-                const auto& iter = AS_ITER(*this)->iter;
+                const auto& iter = AS_(iter, *this)->iter;
                 std::string ret;
                 std::visit([&ret](auto&& iter) {
                     ret = "->" + iter.obj->printVal();
@@ -187,11 +187,11 @@ void Object::emit(std::ofstream& os) const
 {
     switch (type)
     {
-        case OBJ_INT:       emitBytes(os, OBJ_INT, AS_INT(*this));  break;
-        case OBJ_DEC:       emitBytes(os, OBJ_DEC, AS_DEC(*this));  break;
-        case OBJ_FUNC:      AS_FUNC(*this).emit(os);                break;
-        case OBJ_STRING:    AS_STRING(*this).emit(os);              break;
-        case OBJ_RANGE:     AS_RANGE(*this).emit(os);               break;
+        case OBJ_INT:       emitBytes(os, OBJ_INT, AS_(int, *this));    break;
+        case OBJ_DEC:       emitBytes(os, OBJ_DEC, AS_(dec, *this));    break;
+        case OBJ_FUNC:      AS_(func, *this)->emit(os);                 break;
+        case OBJ_STRING:    AS_(string, *this)->emit(os);               break;
+        case OBJ_RANGE:     AS_(range, *this)->emit(os);                break;
         default: break;
     }
 }
@@ -285,9 +285,9 @@ bool Range::operator==(const Range& other) const
 
 bool Range::contains(const Object& num) const
 {
-    ASSERT(IS_INT(num), "Object passed with wrong type.");
+    ASSERT(IS_(INT, num), "Object passed with wrong type.");
     
-    i64 val = AS_INT(num);
+    i64 val = AS_(int, num);
     for (i64 i = start; i <= stop; i += step)
     {
         if (val == i)
@@ -438,7 +438,7 @@ bool RangeIter::next(Object& var)
 {
     val += obj->step;
     if (val > obj->stop) return false;
-    AS_INT(var) = val;
+    AS_(int, var) = val;
     return true;
 }
 

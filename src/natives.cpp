@@ -35,13 +35,13 @@ void Natives::print(Natives::iter it, ui8 args, const Token& error)
         switch (it[i].type)
         {
             // Fast path printing.
-            case OBJ_INT:   FORMAT_PRINT("{}", AS_INT(it[i]));      break;
-            case OBJ_DEC:   FORMAT_PRINT("{:.6f}", AS_DEC(it[i]));  break;
-            case OBJ_BOOL:  FORMAT_PRINT("{}", AS_BOOL(it[i]));     break;
-            case OBJ_NULL:  FORMAT_PRINT("null");                   break;
+            case OBJ_INT:   FORMAT_PRINT("{}", AS_(int, it[i]));        break;
+            case OBJ_DEC:   FORMAT_PRINT("{:.6f}", AS_(dec, it[i]));    break;
+            case OBJ_BOOL:  FORMAT_PRINT("{}", AS_(bool, it[i]));       break;
+            case OBJ_NULL:  FORMAT_PRINT("null");                       break;
             case OBJ_STRING:
             {
-                FORMAT_PRINT("{}", AS_STRING(*(it + i)).str);
+                FORMAT_PRINT("{}", AS_(string, it[i])->str);
                 break;
             }
             // Slower alternative.
@@ -88,12 +88,12 @@ void Natives::range(Natives::iter it, ui8 args, const Token& error)
         throw RuntimeError(error,
             FORMAT_STR("Expect 2 or 3 arguments but found {}.", args)
         );
-    if (!IS_INT(it[0]) || !IS_INT(it[1]) || ((args == 3) && !IS_INT(it[2])))
+    if (!IS_(INT, it[0]) || !IS_(INT, it[1]) || ((args == 3) && !IS_(INT, it[2])))
         throw RuntimeError(error, "Arguments must be integers.");
 
-    std::array<i64, 3> limits = {AS_INT(*it), AS_INT(*(it + 1)), 1};
+    std::array<i64, 3> limits = {AS_(int, it[0]), AS_(int, it[1]), 1};
     if (args == 3)
-        limits[2] = AS_INT(*(it + 2));
+        limits[2] = AS_(int, it[2]);
     *it = Object(ALLOC(Range, ObjDealloc<Range>, limits));
 }
 
@@ -105,9 +105,9 @@ void Natives::read(Natives::iter it, ui8 args, const Token& error)
         );
     if (args == 1)
     {
-        if (!IS_STRING(it[0]))
+        if (!IS_(STRING, it[0]))
             throw RuntimeError(error, "Argument must be a string."); // Temporarily.
-        FORMAT_PRINT("{}", AS_STRING(it[0]).str);
+        FORMAT_PRINT("{}", AS_(string, it[0])->str);
     }
 
     std::ios_base::sync_with_stdio(false);

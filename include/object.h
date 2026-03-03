@@ -106,7 +106,7 @@ class Object
         ObjType type;
         union Value {
             i64         intVal;
-            double      doubleVal;
+            double      decVal;
             bool        boolVal;
             ObjType     typeVal;
             FuncType    nativeVal;
@@ -222,7 +222,7 @@ Object::Object(T val)
     else if constexpr (std::is_same_v<T, double>)
     {
         type = OBJ_DEC;
-        as.doubleVal = val;
+        as.decVal = val;
     }
     else if constexpr (std::is_same_v<T, bool>)
     {
@@ -287,39 +287,17 @@ Object::Object(T val)
 
 // Type check and validation macros.
 
-#define IS_INT(obj)         ((obj).type == OBJ_INT)
-#define IS_DEC(obj)         ((obj).type == OBJ_DEC)
-#define IS_BOOL(obj)        ((obj).type == OBJ_BOOL)
-#define IS_NULL(obj)        ((obj).type == OBJ_NULL)
-#define IS_TYPE(obj)        ((obj).type == OBJ_TYPE)
-#define IS_NATIVE(obj)      ((obj).type == OBJ_NATIVE)
-#define IS_FUNC(obj)        ((obj).type == OBJ_FUNC)
-#define IS_CALLABLE(obj)    (IS_NATIVE(obj) || IS_FUNC(obj))
-#define IS_STRING(obj)      ((obj).type == OBJ_STRING)
-#define IS_RANGE(obj)       ((obj).type == OBJ_RANGE)
-
+#define IS_(TYPE, obj)      ((obj).type == OBJ_##TYPE)
+#define IS_CALLABLE(obj)    (IS_(NATIVE, obj) || IS_(FUNC, obj))
 #define IS_HEAP_OBJ(obj)    (((obj).type > OBJ_NATIVE) && ((obj).type < OBJ_NUM))
-#define IS_ITER(obj)        ((obj).type == OBJ_ITER)
-
-#define IS_NUM(obj)         (IS_INT(obj) || IS_DEC(obj))
+#define IS_NUM(obj)         (IS_(INT, obj) || IS_(DEC, obj))
 #define IS_ITERABLE(obj)    (((obj).type >= OBJ_STRING) && ((obj).type <= OBJ_TABLE))
-
-#define IS_PRIMITIVE(obj)   (!IS_HEAP_OBJ(obj) && !(IS_ITER(obj)))
+#define IS_PRIMITIVE(obj)   (!IS_HEAP_OBJ(obj) && !(IS_(ITER, obj)))
 #define IS_VALID(obj)       ((obj).type != OBJ_INVALID)
 
 // Conversion macros.
 
-#define AS_INT(obj)         ((obj).as.intVal)
-#define AS_DEC(obj)         ((obj).as.doubleVal)
-#define AS_BOOL(obj)        ((obj).as.boolVal)
-#define AS_TYPE(obj)        ((obj).as.typeVal)
-#define AS_NATIVE(obj)      ((obj).as.nativeVal)
-#define AS_FUNC(obj)        (*((obj).as.funcVal))
-#define AS_STRING(obj)      (*((obj).as.stringVal))
-#define AS_RANGE(obj)       (*((obj).as.rangeVal))
-
+#define AS_(TYPE, obj)      ((obj).as.TYPE##Val)
 #define AS_HEAP_PTR(obj)    ((obj).as.heapVal)
-#define AS_ITER(obj)        ((obj).as.iterVal)
-
-#define AS_NUM(obj)         ((obj).type == OBJ_INT ? AS_INT(obj) : AS_DEC(obj))
-#define AS_UINT(obj)        (static_cast<ui64>(AS_INT(obj)))
+#define AS_NUM(obj)         (IS_(INT, obj) ? AS_(int, obj) : AS_(dec, obj))
+#define AS_UINT(obj)        (static_cast<ui64>(AS_(int, obj)))

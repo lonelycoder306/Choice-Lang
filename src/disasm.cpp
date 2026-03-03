@@ -32,8 +32,8 @@ void Disassembler::printOperValue(const Object& oper)
 {
 	FORMAT_PRINT("'{}' {}\n",
 		oper.printVal(), oper.printType());
-	if (IS_FUNC(oper) && !inVM)
-		disFunction(AS_FUNC(oper));
+	if (IS_(FUNC, oper) && !inVM)
+		disFunction(*(AS_(func, oper)));
 }
 
 ui8 Disassembler::restoreByte()

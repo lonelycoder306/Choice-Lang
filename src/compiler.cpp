@@ -770,12 +770,12 @@ void Compiler::compoundAssign(TokenType oper, ui8 slot)
         case TOK_PERCENT_EQ:    op = OP_MOD;            break;
         case TOK_STAR_STAR_EQ:  op = OP_POWER;          break;
 
-        case TOK_AMP_EQ:        op = OP_BIT_AND;        break;
-        case TOK_BAR_EQ:        op = OP_BIT_OR;         break;
-        case TOK_UARROW_EQ:     op = OP_BIT_XOR;        break;
-        case TOK_TILDE_EQ:      op = OP_BIT_COMP;       break;
-        case TOK_LSHIFT_EQ:     op = OP_BIT_SHIFT_L;    break;
-        case TOK_RSHIFT_EQ:     op = OP_BIT_SHIFT_R;    break;
+        case TOK_AMP_EQ:        op = OP_AND;            break;
+        case TOK_BAR_EQ:        op = OP_OR;             break;
+        case TOK_UARROW_EQ:     op = OP_XOR;            break;
+        case TOK_TILDE_EQ:      op = OP_COMP;           break;
+        case TOK_LSHIFT_EQ:     op = OP_SHIFT_L;        break;
+        case TOK_RSHIFT_EQ:     op = OP_SHIFT_R;        break;
         default: UNREACHABLE();
     }
 
@@ -914,17 +914,17 @@ void Compiler::comparison()
 
 void Compiler::bitOr()
 {
-    compileDescent(&Compiler::bitXor, TOK_BAR, OP_BIT_OR);
+    compileDescent(&Compiler::bitXor, TOK_BAR, OP_OR);
 }
 
 void Compiler::bitXor()
 {
-    compileDescent(&Compiler::bitAnd, TOK_UARROW, OP_BIT_XOR);
+    compileDescent(&Compiler::bitAnd, TOK_UARROW, OP_XOR);
 }
 
 void Compiler::bitAnd()
 {
-    compileDescent(&Compiler::shift, TOK_AMP, OP_BIT_AND);
+    compileDescent(&Compiler::shift, TOK_AMP, OP_AND);
 }
 
 void Compiler::shift()
@@ -938,8 +938,8 @@ void Compiler::shift()
         ui8 secondOper = previousReg;
         sum();
 
-        code.addOp(oper == TOK_RIGHT_SHIFT ? OP_BIT_SHIFT_R
-            : OP_BIT_SHIFT_L, firstOper, firstOper, secondOper);
+        code.addOp(oper == TOK_RIGHT_SHIFT ? OP_SHIFT_R
+            : OP_SHIFT_L, firstOper, firstOper, secondOper);
         freeReg();
     }
 }
@@ -1005,7 +1005,7 @@ void Compiler::_crementExpr(TokenType oper, bool prev)
                 consumeToks(TOK_INCR, TOK_DECR); // Skip the operator token.
                 code.addOp(OP_GET_VAR, previousReg, *slot);
             }
-            code.addOp(oper == TOK_INCR ? OP_INCREMENT : OP_DECREMENT,
+            code.addOp(oper == TOK_INCR ? OP_INCR : OP_DECR,
                 *slot, *slot);
             if (!prev)
                 code.addOp(OP_GET_VAR, previousReg, *slot);
@@ -1033,7 +1033,7 @@ void Compiler::unary()
             case TOK_MINUS: op = OP_NEGATE;     break;
             case TOK_BANG:
             case TOK_NOT:   op = OP_NOT;        break;
-            case TOK_TILDE: op = OP_BIT_COMP;   break;
+            case TOK_TILDE: op = OP_COMP;       break;
             default: UNREACHABLE();
         }
 

@@ -63,11 +63,11 @@ inline bool VM::isTruthy(const Object& obj)
 {
     switch (obj.type)
     {
-        case OBJ_INT:       return (AS_INT(obj) != 0);
-        case OBJ_DEC:       return (AS_DEC(obj) != 0.0);
-        case OBJ_BOOL:      return AS_BOOL(obj);
+        case OBJ_INT:       return (AS_(int, obj) != 0);
+        case OBJ_DEC:       return (AS_(dec, obj) != 0.0);
+        case OBJ_BOOL:      return AS_(bool, obj);
         case OBJ_NULL:      return false;
-        case OBJ_STRING:    return (AS_STRING(obj).str.size() != 0);
+        case OBJ_STRING:    return (AS_(string, obj)->str.size() != 0);
         // Functions and ranges are always truthy.
         default:            return true;
     }
@@ -129,7 +129,7 @@ inline Object VM::loadOper()
 
 inline Object VM::concatStrings(const Object& str1, const Object& str2)
 {
-    std::string concat = AS_STRING(str1).str + AS_STRING(str2).str;
+    std::string concat = AS_(string, str1)->str + AS_(string, str2)->str;
     return ALLOC(String, ObjDealloc<String>, concat);
 }
 
@@ -138,7 +138,7 @@ Object VM::arithOper(Opcode oper, ui8 offset, ui8 firstOper)
     const Object& a = depthWindows[offset][firstOper];
     const Object& b = registers[readByte()];
 
-    if (IS_INT(a) && IS_INT(b))
+    if (IS_(INT, a) && IS_(INT, b))
     {
         i64 aVal = a.as.intVal;
         i64 bVal = b.as.intVal;
@@ -169,7 +169,7 @@ Object VM::arithOper(Opcode oper, ui8 offset, ui8 firstOper)
             default: UNREACHABLE();
         }
     }
-    else if (IS_STRING(a) && IS_STRING(b) && (oper == OP_ADD))
+    else if (IS_(STRING, a) && IS_(STRING, b) && (oper == OP_ADD))
         return concatStrings(a, b);
     else
         throw TypeMismatch(
@@ -201,18 +201,18 @@ Object VM::compareOper(Opcode op, ui8 firstOper)
         case OP_LT:     return (a < b);
         case OP_IN:
         {
-            if (IS_STRING(a) && IS_STRING(b))
+            if (IS_(STRING, a) && IS_(STRING, b))
             {
-                const String& s1 = AS_STRING(a);
-                const String& s2 = AS_STRING(b);
+                const String& s1 = *(AS_(string, a));
+                const String& s2 = *(AS_(string, b));
                 return s2.contains(s1);
             }
-            else if (IS_INT(a) && IS_RANGE(b))
+            else if (IS_(INT, a) && IS_(RANGE, b))
             {
-                const Range& range = AS_RANGE(b);
+                const Range& range = *(AS_(range, b));
                 return range.contains(a);
             }
-            else if (!IS_STRING(b) && !IS_RANGE(b))
+            else if (!IS_(STRING, b) && !IS_(RANGE, b))
                 throw TypeMismatch(
                     "Right operand must be an iterable object.",
                     OBJ_ITER,
@@ -241,11 +241,11 @@ Object VM::bitOper(Opcode op, ui8 offset, ui8 firstOper)
     const Object& a = depthWindows[offset][firstOper];
     const Object& b = registers[readByte()];
 
-    if (!IS_INT(a) || !IS_INT(b))
+    if (!IS_(INT, a) || !IS_(INT, b))
         throw TypeMismatch(
             "Cannot apply bitwise operator to non-integer values.",
             OBJ_INT,
-            (IS_INT(a) ? b.type : a.type)
+            (IS_(INT, a) ? b.type : a.type)
         );
 
     ui64 aVal = AS_UINT(a);
@@ -278,10 +278,10 @@ Object VM::unaryOper(Opcode op, ui8 offset, ui8 oper)
                     OBJ_NUM,
                     obj.type
                 );
-            if (IS_INT(obj))
-                return AS_INT(obj) + i64(op == OP_INCR ? 1 : -1);
+            if (IS_(INT, obj))
+                return AS_(int, obj) + i64(op == OP_INCR ? 1 : -1);
             else
-                return AS_DEC(obj) + double(op == OP_INCR ? 1 : -1);
+                return AS_(dec, obj) + double(op == OP_INCR ? 1 : -1);
         }
         case OP_NEGATE:
         {
@@ -291,7 +291,7 @@ Object VM::unaryOper(Opcode op, ui8 offset, ui8 oper)
                     OBJ_NUM,
                     obj.type
                 );
-            if (IS_INT(obj))
+            if (IS_(INT, obj))
                 return i64(AS_NUM(obj) * -1);
             else
                 return (AS_NUM(obj) * -1);
@@ -299,7 +299,7 @@ Object VM::unaryOper(Opcode op, ui8 offset, ui8 oper)
         case OP_NOT: return !isTruthy(obj);
         case OP_COMP:
         {
-            if (!IS_INT(obj))
+            if (!IS_(INT, obj))
                 throw TypeMismatch(
                     "Cannot apply bitwise operator to non-integer values.",
                     OBJ_INT,
@@ -320,7 +320,7 @@ void VM::callFunc(const Object& callee, ui8 offset, ui8 start, ui8 argCount)
         #endif
     });
 
-    const ByteCode& code = AS_FUNC(callee).code;
+    const ByteCode& code = AS_(func, callee)->code;
     registers += start;
     ip = code.block.data();
     end = ip + code.block.size();
@@ -337,7 +337,7 @@ void VM::callFunc(const Object& callee, ui8 offset, ui8 start, ui8 argCount)
 
 void VM::callNative(const Object& callee, ui8 start, ui8 argCount)
 {
-    auto* func = Natives::functions[AS_NATIVE(callee)];
+    auto* func = Natives::functions[AS_(native, callee)];
     (*func)(&registers[start], argCount, Token());
 }
 
@@ -410,7 +410,7 @@ void VM::handleIter(Opcode oper)
         Object& iter = registers[readByte()];
         ui16 jump = readShort();
 
-        if (AS_ITER(iter)->next(var))
+        if (AS_(iter, iter)->next(var))
         {
             ip -= jump;
             #if WATCH_EXEC
