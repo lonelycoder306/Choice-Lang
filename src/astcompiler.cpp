@@ -350,7 +350,7 @@ void ASTCompiler::matchCaseHelper(MatchStmt::matchCase& checkCase,
 {
     ui8 caseReg = previousReg;
     compileExpr(checkCase.value);
-    code.addOp(OP_EQUAL, caseReg, matchReg, caseReg);
+    code.addOp(OP_EQUAL, caseReg, matchReg);
     ui64 falseJump = code.addJump(OP_JUMP_FALSE, caseReg);
     freeReg();
 
