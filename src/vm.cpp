@@ -210,7 +210,7 @@ Object VM::compareOper(Opcode op, ui8 firstOper)
             else if (IS_(INT, a) && IS_(RANGE, b))
             {
                 const Range& range = *(AS_(range, b));
-                return range.contains(a);
+                return range.contains(AS_(int, a));
             }
             else if (!IS_(STRING, b) && !IS_(RANGE, b))
                 throw TypeMismatch(

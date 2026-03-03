@@ -80,7 +80,7 @@ struct Range : public HeapObj
     Range(const std::array<i64, 3>& limits);
     bool operator==(const Range& other) const;
 
-    bool contains(const Object& num) const;
+    bool contains(const i64 num) const;
     std::string printVal() const;
     void emit(std::ofstream& os) const;
 };

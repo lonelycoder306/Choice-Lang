@@ -283,14 +283,11 @@ bool Range::operator==(const Range& other) const
             && (this->step == other.step));
 }
 
-bool Range::contains(const Object& num) const
+bool Range::contains(const i64 num) const
 {
-    ASSERT(IS_(INT, num), "Object passed with wrong type.");
-    
-    i64 val = AS_(int, num);
     for (i64 i = start; i <= stop; i += step)
     {
-        if (val == i)
+        if (num == i)
             return true;
     }
 
