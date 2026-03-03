@@ -15,7 +15,7 @@
 *.bch
 
 # Comparison test and benchmark scripts.
-*.py
+programs/
 *.sh
 
 # Extra directories with notes or build files/
