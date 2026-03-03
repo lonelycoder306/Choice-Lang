@@ -18,6 +18,7 @@ enum ObjType
     OBJ_DEC,
     OBJ_BOOL,
     OBJ_NULL,
+    OBJ_TYPE,
     OBJ_NATIVE,
     OBJ_FUNC,
     OBJ_BIGINT,
@@ -107,6 +108,7 @@ class Object
             i64         intVal;
             double      doubleVal;
             bool        boolVal;
+            ObjType     typeVal;
             FuncType    nativeVal;
             Function*   funcVal;
             String*     stringVal;
@@ -232,6 +234,11 @@ Object::Object(T val)
         type = OBJ_NULL;
         as.heapVal = val; // Dummy assignment.
     }
+    else if constexpr (std::is_same_v<T, ObjType>)
+    {
+        type = OBJ_TYPE;
+        as.typeVal = val;
+    }
     else if constexpr (std::is_same_v<T, FuncType>)
     {
         type = OBJ_NATIVE;
@@ -284,6 +291,7 @@ Object::Object(T val)
 #define IS_DEC(obj)         ((obj).type == OBJ_DEC)
 #define IS_BOOL(obj)        ((obj).type == OBJ_BOOL)
 #define IS_NULL(obj)        ((obj).type == OBJ_NULL)
+#define IS_TYPE(obj)        ((obj).type == OBJ_TYPE)
 #define IS_NATIVE(obj)      ((obj).type == OBJ_NATIVE)
 #define IS_FUNC(obj)        ((obj).type == OBJ_FUNC)
 #define IS_CALLABLE(obj)    (IS_NATIVE(obj) || IS_FUNC(obj))
@@ -304,6 +312,7 @@ Object::Object(T val)
 #define AS_INT(obj)         ((obj).as.intVal)
 #define AS_DEC(obj)         ((obj).as.doubleVal)
 #define AS_BOOL(obj)        ((obj).as.boolVal)
+#define AS_TYPE(obj)        ((obj).as.typeVal)
 #define AS_NATIVE(obj)      ((obj).as.nativeVal)
 #define AS_FUNC(obj)        (*((obj).as.funcVal))
 #define AS_STRING(obj)      (*((obj).as.stringVal))

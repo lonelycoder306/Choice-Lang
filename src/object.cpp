@@ -8,8 +8,9 @@
 #include <type_traits>
 
 static std::string_view objTypes[] = {
-    "int", "dec", "bool", "null", "builtin function", "user function", "bigint",
-    "bigdec", "string", "range", "list", "table", "num", "iterable"
+    "int", "dec", "bool", "null", "type", "builtin function",
+    "user function", "bigint", "bigdec", "string", "range",
+    "list", "table", "num", "iterable"
 };
 
 /* Object. */
@@ -111,6 +112,7 @@ bool Object::operator==(const Object& other) const
         case OBJ_DEC:       return AS_DEC(*this) == AS_DEC(other);
         case OBJ_BOOL:      return AS_BOOL(*this) == AS_BOOL(other);
         case OBJ_NULL:      return true;
+        case OBJ_TYPE:      return AS_TYPE(*this) == AS_TYPE(other);
         case OBJ_NATIVE:    return AS_NATIVE(*this) == AS_NATIVE(other);
         case OBJ_FUNC:      return AS_FUNC(*this) == AS_FUNC(other);
         case OBJ_STRING:    return AS_STRING(*this) == AS_STRING(other);
@@ -141,6 +143,7 @@ std::string Object::printVal() const
         case OBJ_DEC:       return std::to_string(AS_DEC(*this));
         case OBJ_BOOL:      return (AS_BOOL(*this) ? "true" : "false");
         case OBJ_NULL:      return "null";
+        case OBJ_TYPE:      return std::string(objTypes[AS_TYPE(*this)]);
         case OBJ_NATIVE:
             return "builtin '" + std::string(Natives::funcNames[AS_NATIVE(*this)]) + "'";
         case OBJ_FUNC:      return "func '" + AS_FUNC(*this).name + "'";
@@ -181,7 +184,7 @@ static void emitBytes(std::ofstream& os, ObjType type, T value)
 }
 
 void Object::emit(std::ofstream& os) const
-{   
+{
     switch (type)
     {
         case OBJ_INT:       emitBytes(os, OBJ_INT, AS_INT(*this));  break;

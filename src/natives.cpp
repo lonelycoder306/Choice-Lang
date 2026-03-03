@@ -62,7 +62,7 @@ void Natives::type(Natives::iter it, ui8 args, const Token& error)
             FORMAT_STR("Expected 1 argument but found {}.", args)
         );
 
-    *it = Object(ALLOC(String, ObjDealloc<String>, it->printType()));
+    *it = Object(it->type);
 }
 
 void Natives::clock(Natives::iter it, ui8 args, const Token& error)
