@@ -62,14 +62,16 @@ class ASTCompiler
         ASTCompiler* scopeCompiler;
 
         ui8 previousReg;
-        ui8 scope; // Our current block scope depth.
+        ui8 scope{0}; // Our current block scope depth.
         ui8 depth; // Our current function scope depth.
 
         std::stack<std::vector<std::string>> varScopes;
         ASTCompVarsWrapper* varsWrapper;
         ASTCompLoopLabels* labelsWrapper;
-        std::vector<ui64> *endJumps, *breakJumps, *continueJumps;
-        bool hitError;
+        std::vector<ui64>* endJumps{nullptr};
+        std::vector<ui64>* breakJumps{nullptr};
+        std::vector<ui64>* continueJumps{nullptr};
+        bool hitError{false};
 
         // Variables.
 
@@ -128,7 +130,7 @@ class ASTCompiler
         void compileStmt(StmtUP& node);
 
     public:
-        int errorCount; // So it can be modified directly.
+        int errorCount{0}; // So it can be modified directly.
 
         ASTCompiler(ASTCompiler* comp = nullptr);
         ~ASTCompiler();

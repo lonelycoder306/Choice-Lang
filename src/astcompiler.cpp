@@ -32,12 +32,9 @@ class ASTCompLoopLabels
 };
 
 ASTCompiler::ASTCompiler(ASTCompiler* comp) :
-    scopeCompiler(comp), scope(0),
+    scopeCompiler(comp),
     varsWrapper(new ASTCompVarsWrapper),
-    labelsWrapper(new ASTCompLoopLabels),
-    endJumps(nullptr), breakJumps(nullptr),
-    continueJumps(nullptr), hitError(false),
-    errorCount(0)
+    labelsWrapper(new ASTCompLoopLabels)
 {
     previousReg = (comp == nullptr ? Natives::FuncType::NUM_FUNCS : 0);
     depth = (comp == nullptr ? 0 : comp->depth + 1);
