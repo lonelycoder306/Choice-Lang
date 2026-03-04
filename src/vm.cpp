@@ -320,7 +320,17 @@ void VM::callFunc(const Object& callee, ui8 offset, ui8 start, ui8 argCount)
         #endif
     });
 
-    const ByteCode& code = AS_(func, callee)->code;
+    Function* func = AS_(func, callee);
+    if (func->argCount != argCount)
+    {
+        throw RuntimeError(
+            Token(),
+            FORMAT_STR("Expected {} argument{} but found {}.",
+            func->argCount, (func->argCount == 1 ? "" : "s"), argCount)
+        );
+    }
+
+    const ByteCode& code = func->code;
     registers += start;
     ip = code.block.data();
     end = ip + code.block.size();

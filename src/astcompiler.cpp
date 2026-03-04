@@ -166,6 +166,13 @@ DEF(FuncDecl)
         #endif
     }
 
+    size_t size = node->params.size();
+    if (size > PARAMETER_MAX)
+    {
+        REPORT_ERROR(node->params[PARAMETER_MAX],
+            "Too many parameters in function.");
+    }
+
     ui8 varSlot = (redefined ? *(pos.slot) : previousReg);
     std::string name = std::string(node->name.text);
     if (!redefined)
@@ -186,7 +193,8 @@ DEF(FuncDecl)
     miniCompiler.code.addOp(OP_RETURN, 0);
 
     ByteCode& funcCode = miniCompiler.code;
-    Object func = ALLOC(Function, ObjDealloc<Function>, name, funcCode);
+    Object func = ALLOC(Function, ObjDealloc<Function>, name, size,
+        funcCode);
     // We only declare in the current function scope.
     code.loadRegConst(func, varSlot, depth);
 }

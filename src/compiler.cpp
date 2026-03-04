@@ -323,12 +323,14 @@ void Compiler::funDecl()
 
     ui8 varSlot = (redefined ? *(pos.slot) : previousReg);
     Compiler miniCompiler(this);
+    size_t count = 0;
     if (!checkTok(TOK_RIGHT_PAREN))
     {
         do {
             MATCH_TOK(TOK_IDENTIFIER, "Expect parameter name.");
-            ui8 reg = miniCompiler.previousReg;
-            miniCompiler.defVar(std::string(previousTok.text), reg, accessVar);
+            if (count == 255)
+                REPORT_SYNTAX(previousTok, "Too many parameters in function.");
+            miniCompiler.defVar(std::string(previousTok.text), count++, accessVar);
             miniCompiler.reserveReg();
         } while (consumeTok(TOK_COMMA));
     }
@@ -350,7 +352,8 @@ void Compiler::funDecl()
     this->setCompilerData(&miniCompiler);
     inFunc = false;
     ByteCode& funcCode = miniCompiler.code;
-    Object func = ALLOC(Function, ObjDealloc<Function>, name, funcCode);
+    Object func = ALLOC(Function, ObjDealloc<Function>, name, count,
+        funcCode);
 
     // We only declare in the current function scope.
     code.loadRegConst(func, varSlot, depth);

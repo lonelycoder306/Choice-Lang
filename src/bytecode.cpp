@@ -142,8 +142,8 @@ ui64 ByteCode::countPool() const
 				case OBJ_FUNC:
 				{
 					const Function& func = *(AS_(func, obj));
-					// Added type byte (1) and null byte (1).
-					count += 1 + func.name.size() + 1;
+					// Added type byte (1) and null byte (1) and argCount byte (1).
+					count += 1 + func.name.size() + 1 + 1;
 					// Added code size and pool size values,
 					// as well as the actual sizes of the code and pool.
 					count += 2 * sizeof(ui64) + func.code.codeSize()

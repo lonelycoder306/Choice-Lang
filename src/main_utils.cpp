@@ -99,7 +99,11 @@ static Object reconstructFunc(vBit& it, const vBit& end)
 		CHECK_EOF();
 	}
 
-	return Object(ALLOC(Function, ObjDealloc<Function>, name,
+	++it;
+	CHECK_EOF();
+	ui8 argCount = *it;
+
+	return Object(ALLOC(Function, ObjDealloc<Function>, name, argCount,
 		reconstructByteCode(++it, end)));
 }
 

@@ -211,8 +211,10 @@ HeapObj::HeapObj() :
 HeapObj::HeapObj(ObjType type) :
     type(type), refCount(0) {}
 
-Function::Function(const std::string& name, const ByteCode& code) :
-    HeapObj(OBJ_FUNC), name(name), code(code) {}
+Function::Function(const std::string& name, ui8 argCount,
+    const ByteCode& code) :
+    HeapObj(OBJ_FUNC), name(name), argCount(argCount),
+    code(code) {}
 
 bool Function::operator==(const Function& other) const
 {
@@ -224,6 +226,8 @@ void Function::emit(std::ofstream& os) const
     os.put(static_cast<char>(type));
     os.write(name.data(), name.size());
     os.put('\0');
+
+    os.put(static_cast<char>(argCount));
 
     const vByte& block = code.block;
     emitBytes<ui64>(os, OBJ_INVALID, block.size());

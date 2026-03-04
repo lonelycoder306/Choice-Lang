@@ -48,10 +48,11 @@ struct HeapObj
 struct Function : public HeapObj
 {
     std::string name;
+    ui8 argCount;
     ByteCode code;
 
     Function() = default;
-    Function(const std::string& name, const ByteCode& code);
+    Function(const std::string& name, ui8 argCount, const ByteCode& code);
     bool operator==(const Function& other) const;
 
     void emit(std::ofstream& os) const;

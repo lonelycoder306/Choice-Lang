@@ -12,6 +12,7 @@ constexpr inline int LEX_ERROR_MAX = 10;
 
 // Compiler(s).
 
+constexpr inline int PARAMETER_MAX = 256;
 constexpr inline int MATCH_CASES_MAX = 100;
 constexpr inline int COMPILE_ERROR_MAX = 10;
 
