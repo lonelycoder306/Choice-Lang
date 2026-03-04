@@ -343,6 +343,7 @@ void Compiler::funDecl()
         reserveReg();
     }
 
+    bool prevInFunc = inFunc;
     inFunc = true;
     miniCompiler.setCompilerData(this);
     miniCompiler.blockStmt();
@@ -350,7 +351,7 @@ void Compiler::funDecl()
     miniCompiler.code.addOp(OP_RETURN, 0);
 
     this->setCompilerData(&miniCompiler);
-    inFunc = false;
+    inFunc = prevInFunc;
     ByteCode& funcCode = miniCompiler.code;
     Object func = ALLOC(Function, ObjDealloc<Function>, name, count,
         funcCode);
