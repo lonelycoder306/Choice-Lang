@@ -22,6 +22,7 @@ void Disassembler::printOpcode(std::string_view opName)
 void Disassembler::disFunction(const Function& func)
 {
 	FORMAT_PRINT("===== [start] func {} =====\n", func.name);
+	FORMAT_PRINT("-- locals: {}\n", func.argCount);
 	Disassembler miniDis(func.code);
 	miniDis.topLevel = false;
 	miniDis.disassembleCode();
