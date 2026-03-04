@@ -159,7 +159,7 @@ class Token
 		ui16 line; // The line holding the token.
 		ui8 position; // The starting position of the token.
 		TokenType type;
-	
+
 	public:
 		Token();
 		Token(TokenType type, std::string_view text, Value content,
