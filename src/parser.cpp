@@ -180,14 +180,10 @@ StmtUP Parser::funDecl()
     MATCH_TOK(TOK_RIGHT_PAREN, "Expect ')' to close function signature.");
     MATCH_TOK(TOK_LEFT_BRACE, "Expect '{' before function body.");
 
-    StmtUP body = nullptr;
-    if (previousTok.type == TOK_LEFT_BRACE)
-    {
-        bool prevInFunc = inFunc;
-        inFunc = true;
-        body = blockStmt();
-        inFunc = prevInFunc;
-    }
+    bool prevInFunc = inFunc;
+    inFunc = true;
+    StmtUP body = blockStmt();
+    inFunc = prevInFunc;
 
     return StmtUP(std::make_unique<FuncDecl>(name, params, body));
 }
