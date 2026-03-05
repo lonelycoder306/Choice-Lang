@@ -313,13 +313,6 @@ Object VM::unaryOper(Opcode op, ui8 offset, ui8 oper)
 
 void VM::callFunc(const Object& callee, ui8 offset, ui8 start, ui8 argCount)
 {
-    frames.emplace_back(CallFrame::Args{
-        registers, ip, end, pool, offset
-        #if WATCH_EXEC
-        , this->dis
-        #endif
-    });
-
     Function* func = AS_(func, callee);
     if (func->argCount != argCount)
     {
@@ -329,6 +322,13 @@ void VM::callFunc(const Object& callee, ui8 offset, ui8 start, ui8 argCount)
             func->argCount, (func->argCount == 1 ? "" : "s"), argCount)
         );
     }
+
+    frames.emplace_back(CallFrame::Args{
+        registers, ip, end, pool, offset
+        #if WATCH_EXEC
+        , this->dis
+        #endif
+    });
 
     const ByteCode& code = func->code;
     registers += start;
