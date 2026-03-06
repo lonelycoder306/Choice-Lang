@@ -1087,41 +1087,51 @@ void Compiler::exponent()
 
 void Compiler::call()
 {
-    const Token& firstTok = currentTok;
-    const Token& secondTok = *(it + 1);
-
-    if ((firstTok.type == TOK_IDENTIFIER)
-        && ((secondTok.type == TOK_BANG) || (secondTok.type == TOK_LEFT_PAREN)))
+    ui8 reg = previousReg;
+    const Token tok = currentTok;
+    bool identifierCall = false; // Dummy value.
+    if (tok.type != TOK_EOF)
     {
-        consumeTok(TOK_IDENTIFIER);
-        Token funcName = previousTok;
-        nextTok();
+        const Token& next = *(it + 1);
+        identifierCall = ((tok.type == TOK_IDENTIFIER)
+            && ((next.type == TOK_BANG) || (next.type == TOK_LEFT_PAREN)));
+    }
+    post();
+
+    if (consumeToks(TOK_BANG, TOK_LEFT_PAREN))
+    {
         bool builtin = false;
         if (previousTok.type == TOK_BANG)
         {
+            if (!identifierCall)
+                REPORT_SEMANTIC(tok, "Built-in functions must be called by name.");
             MATCH_TOK(TOK_LEFT_PAREN, "Invalid placement for token '!'.");
             builtin = true;
         }
 
-        ui8 location;
-        ui8 varDepth;
+        ui8 location, depth;
 
         if (builtin)
         {
-            auto find = Natives::builtins.find(funcName.text);
+            auto find = Natives::builtins.find(tok.text);
             if (find == Natives::builtins.end())
-                REPORT_SEMANTIC(funcName, "No builtin '"
-                    + std::string(funcName.text) + "' function.");
+                REPORT_SEMANTIC(tok, "No builtin '" + std::string(tok.text)
+                    + "' function.");
             location = static_cast<ui8>(find->second);
+        }
+        else if (identifierCall)
+        {
+            VarInfo pos = getVarInfo(tok);
+            if (pos.slot == nullptr)
+                REPORT_SEMANTIC(tok, "Undefined variable '"
+                    + std::string(tok.text) + "'.");
+            location = *(pos.slot);
+            depth = pos.depth;
         }
         else
         {
-            VarInfo pos = getVarInfo(funcName);
-            if (pos.slot == nullptr)
-                REPORT_SEMANTIC(funcName, "Undefined variable '"
-                    + std::string(funcName.text) + "'.");
-            location = *(pos.slot);
-            varDepth = pos.depth;
+            location = reg;
+            depth = this->depth;
         }
 
         ui8 startReg = previousReg;
@@ -1138,7 +1148,7 @@ void Compiler::call()
         if (builtin)
             code.addOp(OP_CALL_NAT, location, startReg, argCount);
         else
-            code.addOp(OP_CALL_DEF, varDepth, location, startReg, argCount);
+            code.addOp(OP_CALL_DEF, depth, location, startReg, argCount);
 
         // Skip arguments.
         // Our return value replaces the first argument.
@@ -1147,8 +1157,6 @@ void Compiler::call()
         else
             previousReg -= argCount - 1;
     }
-    else
-        post();
 }
 
 void Compiler::post()
@@ -1156,6 +1164,7 @@ void Compiler::post()
     const Token& firstTok = currentTok;
     const Token& secondTok = *(it + 1);
 
+    // Will need to extend for non-identifier operands later.
     if ((firstTok.type == TOK_IDENTIFIER)
         && ((secondTok.type == TOK_INCR) || (secondTok.type == TOK_DECR)))
             _crementExpr(secondTok.type, true);
