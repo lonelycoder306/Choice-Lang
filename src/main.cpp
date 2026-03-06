@@ -172,7 +172,7 @@ static bool prelimChecks(const char* fileName, ArgvOption option)
 		FORMAT_PRINT(stderr, "Invalid Choice file.\n");
 		exit(65);
 	}
-	
+
 	file = std::string(fileName);
 	if (option == LOAD_PROGRAM)
 	{
