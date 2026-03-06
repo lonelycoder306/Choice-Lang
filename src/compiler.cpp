@@ -1196,6 +1196,41 @@ void Compiler::ifExpr()
     code.patchJump(trueJump);
 }
 
+void Compiler::lambda()
+{
+    Compiler miniCompiler(this);
+    size_t count = 0;
+    if (!checkTok(TOK_RIGHT_PAREN))
+    {
+        do {
+            MATCH_TOK(TOK_IDENTIFIER, "Expect parameter name.");
+            if (count == 255)
+                REPORT_SYNTAX(previousTok, "Too many parameters in function.");
+            miniCompiler.defVar(std::string(previousTok.text), count++, accessVar);
+            miniCompiler.reserveReg();
+        } while (consumeTok(TOK_COMMA));
+    }
+    MATCH_TOK(TOK_BAR, "Expect '|' after lambda parameters.");
+    MATCH_TOK(TOK_LEFT_BRACE, "Expect '{' before lambda body.");
+
+    bool prevInFunc = inFunc;
+    inFunc = true;
+    miniCompiler.setCompilerData(this);
+    miniCompiler.blockStmt();
+    miniCompiler.code.addOp(OP_VOID, 0);
+    miniCompiler.code.addOp(OP_RETURN, 0);
+
+    this->setCompilerData(&miniCompiler);
+    inFunc = prevInFunc;
+    ByteCode& funcCode = miniCompiler.code;
+    funcCode.depth = miniCompiler.depth;
+    Object func = ALLOC(Function, ObjDealloc<Function>, funcCode, count);
+
+    // We only declare in the current function scope.
+    code.loadRegConst(func, previousReg, depth);
+    reserveReg();
+}
+
 void Compiler::primary()
 {    
     if (consumeToks(TOK_NUM, TOK_NUM_DEC, TOK_STR_LIT))
@@ -1255,6 +1290,9 @@ void Compiler::primary()
 
     else if (consumeTok(TOK_IF))
         ifExpr();
+    
+    else if (consumeTok(TOK_BAR))
+        lambda();
     
     else
         REPORT_SYNTAX(currentTok, "Invalid token in current position.");

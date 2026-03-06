@@ -179,6 +179,7 @@ class Compiler
         void call();
         void post(); // Post-increment/decrement.
         void ifExpr();
+        void lambda();
         void primary();
     
     public:
