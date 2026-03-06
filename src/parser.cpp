@@ -625,6 +625,9 @@ ExprUP Parser::exponent()
 ExprUP Parser::call()
 {
     ExprUP expr = post();
+    if ((currentTok.type == TOK_BANG) && (expr->type != E_VAR_EXPR))
+        REPORT_SEMANTIC(currentTok, "Built-in functions must be called by name.");
+
     if (consumeToks(TOK_BANG, TOK_LEFT_PAREN))
     {
         bool builtin = false;
@@ -638,10 +641,6 @@ ExprUP Parser::call()
         // Callee does not need to be an identifier.
         // Just has to evaluate to a callable object.
         // Exception: builtin with ! token.
-
-        if ((expr == nullptr) || (expr->type != E_VAR_EXPR))
-            REPORT_SEMANTIC(previousTok,
-                "Attempting to call a non-callable object.");
 
         ExprVec args;
         while (!checkTok(TOK_RIGHT_PAREN) && !checkTok(TOK_EOF))

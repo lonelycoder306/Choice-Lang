@@ -725,28 +725,32 @@ DEF(UnaryExpr)
 
 DEF(CallExpr)
 {
-    // For now only assuming:
-    // [identfier][!](args...)
-    VarExpr* var = static_cast<VarExpr*>(node->callee.get());
-    ui8 location;
-    ui8 varDepth;
+    ui8 location, depth;
 
     if (node->builtin)
-    {
+    {   
+        VarExpr* var = static_cast<VarExpr*>(node->callee.get());
         auto find = Natives::builtins.find(var->name.text);
         if (find == Natives::builtins.end())
             REPORT_ERROR(var->name, "No builtin '"
                 + std::string(var->name.text) + "' function.");
         location = static_cast<ui8>(find->second);
     }
-    else
+    else if (node->callee->type == E_VAR_EXPR)
     {
+        VarExpr* var = static_cast<VarExpr*>(node->callee.get());
         VarInfo pos = getVarInfo(var->name);
         if (pos.slot == nullptr)
             REPORT_ERROR(var->name, "Undefined variable '"
                 + std::string(var->name.text) + "'.");
         location = *(pos.slot);
-        varDepth = pos.depth;
+        depth = pos.depth;
+    }
+    else
+    {
+        location = previousReg;
+        depth = this->depth;
+        compileExpr(node->callee);
     }
 
     ui8 argsStart = previousReg;
@@ -757,7 +761,7 @@ DEF(CallExpr)
     if (node->builtin)
         code.addOp(OP_CALL_NAT, location, argsStart, size);
     else
-        code.addOp(OP_CALL_DEF, varDepth, location, argsStart, size);
+        code.addOp(OP_CALL_DEF, depth, location, argsStart, size);
 
     // Skip arguments.
     // Our return value replaces the first argument.
