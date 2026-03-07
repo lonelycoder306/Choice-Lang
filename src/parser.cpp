@@ -159,8 +159,7 @@ StmtUP Parser::varDecl()
 
     MATCH_TOK(TOK_SEMICOLON, "Expect ';' after variable declaration.");
 
-    return StmtUP(std::make_unique<VarDecl>(declType, name,
-        std::move(init)));
+    return StmtUP(std::make_unique<VarDecl>(declType, name, init));
 }
 
 StmtUP Parser::funcBodyHelper(bool lambda, vT& params)
@@ -265,11 +264,7 @@ StmtUP Parser::ifStmt()
         falseBranch = ifStmt();
     else if (consumeTok(TOK_ELSE))
         falseBranch = statement();
-    return std::make_unique<IfStmt>(
-        std::move(condition),
-        std::move(trueBranch),
-        std::move(falseBranch)
-    );
+    return std::make_unique<IfStmt>(condition, trueBranch, falseBranch);
 }
 
 StmtUP Parser::whileStmt()
@@ -288,8 +283,7 @@ StmtUP Parser::whileStmt()
     if (consumeTok(TOK_ELSE))
         elseClause = statement();
 
-    return std::make_unique<WhileStmt>(std::move(condition),
-        label, std::move(body), std::move(elseClause));
+    return std::make_unique<WhileStmt>(condition, label, body, elseClause);
 }
 
 StmtUP Parser::forStmt()
@@ -317,26 +311,21 @@ StmtUP Parser::forStmt()
     if (consumeTok(TOK_ELSE))
         elseClause = statement();
 
-    return std::make_unique<ForStmt>(var, std::move(iter), std::move(where),
-        label, std::move(body), std::move(elseClause));
+    return std::make_unique<ForStmt>(var, iter, where, label, body, elseClause);
 }
 
 StmtUP Parser::matchStmt()
-{
-    bool prevInMatch = inMatch;
-    inMatch = true;
-    
+{   
     MATCH_TOK(TOK_LEFT_PAREN, "Expect '(' before match value.");
     ExprUP match = expression();
     MATCH_TOK(TOK_RIGHT_PAREN, "Expect ')' after match value.");
     MATCH_TOK(TOK_LEFT_BRACE, "Expect '{' before match cases.");
 
     std::vector<MatchStmt::matchCase> cases;
-
-    if (previousTok.type != TOK_LEFT_BRACE)
-        return std::make_unique<MatchStmt>(std::move(match), cases);
     cases.reserve(MATCH_CASES_MAX);
 
+    bool prevInMatch = inMatch;
+    inMatch = true;
     while (!checkTok(TOK_RIGHT_BRACE) && !checkTok(TOK_EOF))
     {
         if (static_cast<int>(cases.size()) == MATCH_CASES_MAX)
@@ -372,10 +361,8 @@ StmtUP Parser::matchStmt()
             REPORT_SEMANTIC(previousTok,
                 "Cannot have another case after the default case.");
 
-        cases.emplace_back(
-            // 'fall' updated in statement().
-            std::move(value), std::move(body), fall
-        );
+        // 'fall' updated in statement().
+        cases.emplace_back(value, body, fall);
         fall = false; // Reset.
         if (defaultCase)
             break;
@@ -384,7 +371,7 @@ StmtUP Parser::matchStmt()
     MATCH_TOK(TOK_RIGHT_BRACE, "Expect '}' after match-is structure.");
 
     inMatch = prevInMatch;
-    return std::make_unique<MatchStmt>(std::move(match), cases);
+    return std::make_unique<MatchStmt>(match, cases);
 }
 
 StmtUP Parser::repeatStmt()
@@ -399,8 +386,7 @@ StmtUP Parser::repeatStmt()
     MATCH_TOK(TOK_RIGHT_PAREN, "Expect ')' after 'until' condition.");
     MATCH_TOK(TOK_SEMICOLON, "Expect ';' after repeat-until block.");
 
-    return std::make_unique<RepeatStmt>(std::move(condition),
-        std::move(body));
+    return std::make_unique<RepeatStmt>(condition, body);
 }
 
 StmtUP Parser::returnStmt()
@@ -414,7 +400,7 @@ StmtUP Parser::returnStmt()
     if (!checkTok(TOK_SEMICOLON))
         expr = expression();
     MATCH_TOK(TOK_SEMICOLON, "Expect ';' after return statement.");
-    return std::make_unique<ReturnStmt>(keyword, std::move(expr));
+    return std::make_unique<ReturnStmt>(keyword, expr);
 }
 
 StmtUP Parser::breakStmt()
@@ -459,9 +445,9 @@ ExprUP Parser::assignment()
         Token oper = previousTok;
         if ((target == nullptr) || (target->type != E_VAR_EXPR)) // Temporary.
             REPORT_SEMANTIC(previousTok, "Invalid assignment target.");
-        target = std::make_unique<AssignExpr>(std::move(target),
-            oper, expression());
+        target = std::make_unique<AssignExpr>(target, oper, expression());
     }
+
     return target;
 }
 
@@ -471,8 +457,7 @@ ExprUP Parser::logicOr()
     while (consumeToks(TOK_BAR_BAR, TOK_OR))
     {
         TokenType oper = previousTok.type;
-        expr = std::make_unique<LogicExpr>(std::move(expr), oper,
-            logicAnd());
+        expr = std::make_unique<LogicExpr>(expr, oper, logicAnd());
     }
 
     return expr;
@@ -484,8 +469,7 @@ ExprUP Parser::logicAnd()
     while (consumeToks(TOK_AMP_AMP, TOK_AND))
     {
         TokenType oper = previousTok.type;
-        expr = std::make_unique<LogicExpr>(std::move(expr), oper,
-            equality());
+        expr = std::make_unique<LogicExpr>(expr, oper, equality());
     }
 
     return expr;
@@ -497,8 +481,7 @@ ExprUP Parser::equality()
     while (consumeToks(TOK_EQ_EQ, TOK_BANG_EQ))
     {
         TokenType oper = previousTok.type;
-        expr = std::make_unique<CompareExpr>(std::move(expr), oper,
-            comparison());
+        expr = std::make_unique<CompareExpr>(expr, oper, comparison());
     }
 
     return expr;
@@ -512,8 +495,7 @@ ExprUP Parser::comparison()
     {
         TokenType oper = previousTok.type;
         if (oper == TOK_NOT) nextTok();
-        expr = std::make_unique<CompareExpr>(std::move(expr), oper,
-            bitOr());
+        expr = std::make_unique<CompareExpr>(expr, oper, bitOr());
     }
 
     return expr;
@@ -525,8 +507,7 @@ ExprUP Parser::bitOr()
     while (consumeTok(TOK_BAR))
     {
         TokenType oper = previousTok.type;
-        expr = std::make_unique<BitExpr>(std::move(expr), oper,
-            bitXor());
+        expr = std::make_unique<BitExpr>(expr, oper, bitXor());
     }
 
     return expr;
@@ -538,8 +519,7 @@ ExprUP Parser::bitXor()
     while (consumeTok(TOK_UARROW))
     {
         TokenType oper = previousTok.type;
-        expr = std::make_unique<BitExpr>(std::move(expr), oper,
-            bitAnd());
+        expr = std::make_unique<BitExpr>(expr, oper, bitAnd());
     }
 
     return expr;
@@ -551,8 +531,7 @@ ExprUP Parser::bitAnd()
     while (consumeTok(TOK_AMP))
     {
         TokenType oper = previousTok.type;
-        expr = std::make_unique<BitExpr>(std::move(expr), oper,
-            shift());
+        expr = std::make_unique<BitExpr>(expr, oper, shift());
     }
 
     return expr;
@@ -564,8 +543,7 @@ ExprUP Parser::shift()
     while (consumeToks(TOK_RIGHT_SHIFT, TOK_LEFT_SHIFT))
     {
         TokenType oper = previousTok.type;
-        expr = std::make_unique<ShiftExpr>(std::move(expr), oper,
-            shift());
+        expr = std::make_unique<ShiftExpr>(expr, oper, shift());
     }
 
     return expr;
@@ -577,8 +555,7 @@ ExprUP Parser::sum()
     while (consumeToks(TOK_PLUS, TOK_MINUS))
     {
         TokenType oper = previousTok.type;
-        expr = std::make_unique<BinaryExpr>(std::move(expr), oper, 
-            product());
+        expr = std::make_unique<BinaryExpr>(expr, oper, product());
     }
 
     return expr;
@@ -590,8 +567,7 @@ ExprUP Parser::product()
     while (consumeToks(TOK_STAR, TOK_SLASH, TOK_PERCENT))
     {
         TokenType oper = previousTok.type;
-        expr = std::make_unique<BinaryExpr>(std::move(expr), oper, 
-            unary());
+        expr = std::make_unique<BinaryExpr>(expr, oper, unary());
     }
 
     return expr;
@@ -615,8 +591,7 @@ ExprUP Parser::exponent()
     while (consumeTok(TOK_STAR_STAR))
     {
         TokenType oper = previousTok.type;
-        expr = std::make_unique<BinaryExpr>(std::move(expr), oper,
-            call());
+        expr = std::make_unique<BinaryExpr>(expr, oper, call());
     }
 
     return expr;
@@ -650,8 +625,7 @@ ExprUP Parser::call()
             } while (consumeTok(TOK_COMMA));
         }
         MATCH_TOK(TOK_RIGHT_PAREN, "Expect ')' following function arguments.");
-        return std::make_unique<CallExpr>(std::move(expr), args, builtin,
-            previousTok);
+        return std::make_unique<CallExpr>(expr, args, builtin, previousTok);
     }
     else
         return expr;
@@ -699,8 +673,8 @@ ExprUP Parser::ifExpr()
         REPORT_SEMANTIC(currentTok,
             "A conditional expression must have a false-case branch.");
 
-    return ExprUP(std::make_unique<IfExpr>(std::move(condition),
-        std::move(trueBranch), std::move(falseBranch)));
+    return ExprUP(std::make_unique<IfExpr>(condition, trueBranch,
+        falseBranch));
 }
 
 ExprUP Parser::lambda()
